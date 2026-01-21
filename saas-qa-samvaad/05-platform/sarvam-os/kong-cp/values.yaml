@@ -1,0 +1,97 @@
+# -----------------------------------------------------------------------------
+# KONG CONTROL PLANE (CP)
+# -----------------------------------------------------------------------------
+env:
+  role: control_plane
+  
+  # --- DB CONNECTION ---
+  database: postgres
+  pg_host: "postgres-cluster-rw.postgres.svc"
+  pg_port: 5432
+  pg_database: "kong"
+  pg_user: "kong"
+  pg_password:
+    valueFrom:
+      secretKeyRef:
+        name: kong-db-user
+        key: password
+  pg_ssl: "on"
+  pg_ssl_verify: "off"
+  KONG_ADMIN_GUI_API_URL: "http://kong-cp-kong-admin.kong.svc.cluster.local:8001"
+
+podAnnotations:
+  reloader.stakater.com/search: "true"
+
+replicaCount: 3
+
+nodeSelector:
+  role: "gateway"
+tolerations:
+  - key: "role"
+    operator: "Equal"
+    value: "gateway"
+    effect: "NoSchedule"
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: topology.kubernetes.io/zone
+              operator: In
+              values:
+                - asia-south1-a
+                - asia-south1-b
+                - asia-south1-c
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/instance
+                operator: In
+                values:
+                  - kong-cp
+          topologyKey: "topology.kubernetes.io/zone"
+
+ingressController:
+  enabled: true
+  ingressClass: kong
+  env:
+    publish_service: kong/kong-dp-kong-proxy 
+
+proxy:
+  enabled: false
+
+admin:
+  enabled: true
+  http:
+    enabled: true
+  tls:
+    enabled: true
+
+# -----------------------------------------------------------------------------
+# CERTIFICATES & TLS
+# REMOVED: 'secretVolumes' (The chart adds the volume automatically)
+# -----------------------------------------------------------------------------
+cluster:
+  enabled: true
+  tls:
+    enabled: true
+    verify: optional
+    # FIX: Point to the default chart mount path
+    # The chart always mounts the cluster cert at this specific folder:
+    cert: /etc/secrets/kong-cluster-cert/tls.crt
+    cert_key: /etc/secrets/kong-cluster-cert/tls.key
+    trusted_ca_cert: /etc/secrets/kong-cluster-cert/ca.crt
+
+certificates:
+  enabled: true
+  issuer: kong-ca-issuer
+  cluster:
+    enabled: true
+    commonName: kong-cp-kong-cluster.kong.svc.cluster.local
+    dnsNames:
+      - kong-cp-kong-cluster.kong.svc.cluster.local
+      - kong-dp-kong-cluster.kong.svc.cluster.local
+      - localhost

@@ -1,0 +1,26 @@
+replicas: 2
+
+nodeSelector:
+  role: operator
+
+tolerations:
+  - key: "role"
+    operator: "Equal"
+    value: "operator"
+    effect: "NoSchedule"
+
+extraEnvs:
+  - name: KUBERNETES_REQUEST_TIMEOUT
+    value: "60000"   # 60 seconds
+
+resources:
+  requests:
+    memory: 128Mi
+    cpu: 100m
+  limits:
+    memory: 512Mi
+    cpu: 500m
+
+# ------------------------------------------------
+logLevel: INFO
+fullReconciliationIntervalMs: 120000

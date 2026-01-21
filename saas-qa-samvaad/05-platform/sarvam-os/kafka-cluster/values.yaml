@@ -1,0 +1,69 @@
+cloudProvider: "gcp"
+
+namespace: kafka
+clusterName: kafka-cluster
+
+nodeSelector:
+  key: role
+  value: kafka
+
+kafka:
+  nodePool: kafka
+  tolerations:
+    - key: "role"
+      operator: "Equal"
+      value: "kafka"
+      effect: "NoSchedule"
+
+kafkaNodePool:
+  controller:
+    nodePool: kafka
+    replicas: 3
+    volumes:
+    - id: 0
+      type: persistent-claim
+      size: 20Gi
+      kraftMetadata: shared
+      class: premium-rwo
+      deleteClaim: false
+
+  broker:
+    nodePool: kafka
+    replicas: 3
+    volumes:
+    - id: 0
+      type: persistent-claim
+      size: 100Gi
+      kraftMetadata: shared
+      class: premium-rwo
+      deleteClaim: false
+
+kafkaConnect:
+  name: kafka-connect
+  nodePool: kafka
+  replicas: 3
+
+kafkaBridge:
+  name: kafka-bridge
+  nodePool: kafka
+  replicas: 2
+
+dockerRegistry:
+  # Format: REGION-docker.pkg.dev / PROJECT-ID / REPO-NAME / IMAGE-NAME
+  baseImage: "asia-south1-docker.pkg.dev/saas-qa-samvaad/kafka-connect-gcp/kafka-connect"
+  pushSecretName: "gcp-registry-credentials"
+
+kafkaConnector:
+  topics: "v2v-scheduled-connected,chat-outbound"
+  fileNameTemplate: "{{topic}}/{{partition}}/{{topic}}-{{partition}}-{{start_offset}}-{{timestamp:unit=yyyy}}{{timestamp:unit=MM}}{{timestamp:unit=dd}}.gz"
+  restoreFileNameTemplate: "{{topic}}/{{partition}}/{{topic}}-{{partition}}-{{start_offset}}-\\d{8}.gz"
+
+restoreMode:
+  enabled: false
+  restoreToTopic: "chat-outbound"
+  fileNameRegex: "^chat-outbound-.*-20251106\\.gz$"
+
+gcp:
+  serviceAccountEmail: "kafka-connect-connect@saas-qa-samvaad.iam.gserviceaccount.com"
+  gcs:
+    bucketName: "saas-qa-samvaad-kafka"

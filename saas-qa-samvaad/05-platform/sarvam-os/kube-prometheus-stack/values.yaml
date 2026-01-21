@@ -1,0 +1,163 @@
+# -----------------------------------------------------------------------------
+# GLOBAL
+# -----------------------------------------------------------------------------
+fullnameOverride: prometheus
+nameOverride: prometheus
+
+# Use IRSA Service Account
+serviceAccount:
+  create: false
+  name: "monitoring-service"
+
+# -----------------------------------------------------------------------------
+# GRAFANA
+# -----------------------------------------------------------------------------
+grafana:
+  replicas: 2
+  
+  # Placement
+  nodeSelector:
+    role: monitoring
+  tolerations:
+    - key: "role"
+      operator: "Equal"
+      value: "monitoring"
+      effect: "NoSchedule"
+
+  serviceAccount:
+    create: false
+    name: "monitoring-service"
+
+  persistence:
+    enabled: true
+    storageClassName: premium-rwo
+    size: 10Gi
+
+  plugins:
+    - grafana-clickhouse-datasource
+
+  # Point to Thanos Query for the Global/Deduplicated view
+  sidecar:
+    datasources:
+      defaultDatasourceEnabled: false
+  additionalDataSources:
+    - name: Thanos
+      type: prometheus
+      url: http://thanos-query.monitoring.svc.cluster.local:9090
+      access: proxy
+      isDefault: true
+      jsonData:
+        timeInterval: 5s
+
+  envFromSecret: grafana-credentials
+  grafana.ini:
+    server:
+      root_url: https://grafana.saas-qa-samvaad.sarvam.ai
+      serve_from_sub_path: false
+    database:
+      type: postgres
+      host: postgres-cluster-rw.postgres.svc.cluster.local
+      name: grafana
+      user: grafana
+      password: ${GF_DATABASE_PASSWORD}
+      ssl_mode: require
+    auth.google:
+      enabled: true
+      allow_sign_up: true
+      auto_login: false
+      client_id: 881009798994-bdvprso030saju3e16qlsredckvgvnn5.apps.googleusercontent.com
+      client_secret: ${GF_AUTH_GOOGLE_CLIENT_SECRET}
+      scopes: "openid email profile"
+      auth_url: "https://accounts.google.com/o/oauth2/v2/auth"
+      token_url: "https://oauth2.googleapis.com/token"
+      api_url: "https://openidconnect.googleapis.com/v1/userinfo"
+      allowed_domains: "sarvam.ai"
+      hosted_domain: "sarvam.ai"
+      use_pkce: true
+
+# -----------------------------------------------------------------------------
+# PROMETHEUS (The Core)
+# -----------------------------------------------------------------------------
+prometheus:
+  serviceAccount:
+    create: false
+    name: "monitoring-service"
+
+  prometheusSpec:
+    # 1. Enable Thanos Sidecar (Uploads to S3)
+    thanos:
+      objectStorageConfig:
+        existingSecret:
+          name: thanos-objstore
+          key: objstore.yml
+
+    # 2. Production Sharding & Replication
+    # Shards = 2 (Splits load)
+    # Replicas = 2 (High Availability)
+    # Total Pods = 4
+    shards: 2
+    replicas: 2
+
+    # 3. External Labels (CRITICAL for Thanos)
+    # We DO NOT set 'replica' here. The Operator adds 'prometheus_replica' automatically.
+    externalLabels:
+      cluster: "sarvam-prod"
+      region: "ap-south-1"
+
+    # 4. Placement (Matches Taint)
+    nodeSelector:
+      role: monitoring
+    tolerations:
+      - key: "role"
+        operator: "Equal"
+        value: "monitoring"
+        effect: "NoSchedule"
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: role
+              operator: In
+              values:
+              - monitoring
+
+    # 5. Resources & Storage
+    resources:
+      requests:
+        cpu: "2000m"
+        memory: "6Gi"
+      limits:
+        cpu: "4000m"
+        memory: "8Gi"
+
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: premium-rwo
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 150Gi
+
+# -----------------------------------------------------------------------------
+# COMPONENT PLACEMENT
+# -----------------------------------------------------------------------------
+alertmanager:
+  alertmanagerSpec:
+    nodeSelector:
+      role: monitoring
+    tolerations:
+      - key: "role"
+        operator: "Equal"
+        value: "monitoring"
+        effect: "NoSchedule"
+
+prometheusOperator:
+  nodeSelector:
+    role: monitoring
+  tolerations:
+    - key: "role"
+      operator: "Equal"
+      value: "monitoring"
+      effect: "NoSchedule"

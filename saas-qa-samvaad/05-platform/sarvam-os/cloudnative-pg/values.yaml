@@ -1,0 +1,12 @@
+cloudnative-pg:
+  crds:
+    create: true
+
+  tolerations:
+  - key: "role"
+    operator: "Equal"
+    value: "operator"
+    effect: "NoSchedule"
+
+  nodeSelector:
+    role: "operator"

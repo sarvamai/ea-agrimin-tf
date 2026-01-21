@@ -1,0 +1,99 @@
+global:
+  domain: argocd.agrimin.sarvam.ai
+  nodeSelector:
+    role: argocd
+  tolerations:
+  - key: "role"
+    operator: "Equal"
+    value: "argocd"
+    effect: "NoSchedule"
+  
+configs:
+  cm:
+    url: https://argocd.agrimin.sarvam.ai
+
+  params:
+    server.insecure: true
+    # How many apps to check at once (Default is 20)
+    controller.status.processors: "50" 
+    # How many sync operations to run at once (Default is 10)
+    controller.operation.processors: "25"
+
+
+redis-ha:
+  enabled: true
+  nodeSelector:
+    role: argocd
+  tolerations:
+  - key: "role"
+    operator: "Equal"
+    value: "argocd"
+    effect: "NoSchedule"
+  # Redis HA pods must be on different nodes
+  hardAntiAffinity: true
+
+controller:
+  replicas: 3
+  dynamicClusterDistribution: true
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: "topology.kubernetes.io/zone"
+      whenUnsatisfiable: DoNotSchedule # Force split between Zone 1 and 3
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/name: argocd-application-controller
+    - maxSkew: 1
+      topologyKey: "kubernetes.io/hostname"
+      whenUnsatisfiable: ScheduleAnyway # Spread across nodes as much as possible
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/name: argocd-application-controller
+
+repoServer:
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+  
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: "topology.kubernetes.io/zone"
+      whenUnsatisfiable: DoNotSchedule
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/name: argocd-repo-server
+    - maxSkew: 1
+      topologyKey: "kubernetes.io/hostname"
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/name: argocd-repo-server
+
+applicationSet:
+  replicas: 3
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: "kubernetes.io/hostname"
+      whenUnsatisfiable: DoNotSchedule
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/name: argocd-applicationset-controller
+
+server:
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+  service:
+    type: ClusterIP
+  ingress:
+    enabled: true
+    hostname: argocd.agrimin.sarvam.ai
+    ingressClassName: kong
+    annotations:
+      kubernetes.io/ingress.class: kong
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+    tls:
+      - secretName: argocd-server-tls
+        hosts:
+          - argocd.agrimin.sarvam.ai

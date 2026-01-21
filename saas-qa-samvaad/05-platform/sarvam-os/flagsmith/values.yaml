@@ -1,0 +1,193 @@
+commonEnv:
+  - name: DATABASE_PREFIX_URL
+    ref:
+      key: "DATABASE_PREFIX_URL"
+      name: "agents-postgres-db-secrets"
+      source: "secretKeyRef"
+  - name: DATABASE_URL
+    value: "$(DATABASE_PREFIX_URL)/sarvam-flagsmith-service-db"
+  - name: DJANGO_ALLOWED_HOSTS
+    value: "*"
+  - name: USE_POSTGRES_FOR_ANALYTICS
+    value: "true"
+  - name: TASK_RUN_METHOD
+    value: "TASK_PROCESSOR"
+
+## Base Configuration
+flagsmith-base:
+  enabled: true
+  namespace: "platform"
+  serviceAccount:
+    enabled: true
+    name: "sarvam-flagsmith"
+  secrets:
+    enabled: true
+    keyVault: "openbao"
+    kubernetesSecretName: "sarvam-flagsmith-service-secrets"
+    ExternalSecret: "sarvam-flagsmith-service-secrets"
+    remoteRefKey: "agents"
+    secretStoreRef:
+      name: "open-bao-store"
+      kind: "ClusterSecretStore"
+    vaultSecrets:
+      FLAGSMITH_DJANGO_SECRET: flagsmith-django-secret
+      FLAGSMITH_CLIENT_ENVIRONMENT_KEY: flagsmith-client-environment-key
+      FLAGSMITH_ON_FLAGSMITH_API_KEY: flagsmith-on-flagsmith-api-key
+      
+## flagsmith
+flagsmith:
+  name: "sarvam-flagsmith-service"
+  namespace: "platform"
+  serviceAccount:
+    name: "sarvam-flagsmith"
+  node_selector_labels:
+    role: "flagsmith"
+
+  apply_default_liveness_probe: true
+  liveliness_probe_port: 8000
+
+  containers:
+  - name: "sarvam-flagsmith-service"
+    image: "flagsmith.docker.scarf.sh/flagsmith/flagsmith"
+    tag: "2.166.0"
+    imagePullPolicy: Always
+    ports:
+      http:
+        container_port: 8000
+        protocol: TCP
+
+    env_from:
+    - name: "observe-env"
+      source: "configMapRef"
+    
+    env:
+    - name: ENVIRONMENT
+      value: "saas-qa-samvaad"
+    - name: DJANGO_SECRET_KEY
+      ref:
+        source: "secretKeyRef"
+        name: "sarvam-flagsmith-service-secrets"
+        key: "FLAGSMITH_DJANGO_SECRET"
+    - name: ALLOW_REGISTRATION_WITHOUT_INVITE
+      value: "True"
+    - name: DJANGO_SECURE_CROSS_ORIGIN_OPENER_POLICY
+      value: "same-origin-allow-popups"
+    - name: PREVENT_EMAIL_PASSWORD
+      value: "False" # ?
+    - name: PREVENT_SIGNUP
+      value: "False"
+    # - name: FLAGSMITH_ON_FLAGSMITH_API_KEY
+    #   ref:
+    #     key: "FLAGSMITH_ON_FLAGSMITH_API_KEY"
+    #     name: "sarvam-flagsmith-service-secrets"
+    #     source: "secretKeyRef"
+    # - name: FLAGSMITH_ON_FLAGSMITH_API_URL
+    #   value: "https://flagsmith.agrimini-os.sarvam.ai/api/v1/"
+    # - name: FLAGSMITH_API_URL
+    #   value: "https://flagsmith.agrimini-os.sarvam.ai/api/v1/"
+
+    probes:
+      liveness:
+        protocol: "http_get"
+        port: "8000"
+        http_get_path: "/health"
+        initial_delay_seconds: 30
+        period_seconds: 10
+        timeout_seconds: 5
+
+    resources:
+      requests:
+        cpu: "1000m"
+        memory: "2000Mi"
+      limits:
+        cpu: "1500m"
+        memory: "2500Mi"
+
+  kube_service_config:
+    type: "ClusterIP"
+    ports:
+      http:
+        port: 80
+        protocol: "TCP"
+        targetPort: 8000
+  
+  tolerations:
+  - key: "role"
+    operator: "Equal"
+    value: "flagsmith"
+    effect: "NoSchedule"
+  
+  hpa:
+    min_replicas: 2
+    max_replicas: 4
+    resource_metrics:
+      - name: cpu
+        target_type: Utilization
+        target_value: 70
+      - name: memory
+        target_type: Utilization
+        target_value: 70
+
+  ingress:
+    enabled: true
+    platform: sarvam-os
+    name: flagsmith-ingress
+    class: kong
+    clusterIssuer: letsencrypt-prod
+    host: flagsmith.saas-qa-samvaad.sarvam.ai
+    tlsSecret: flagsmith-tls
+    servicePort: 80
+
+    routes:
+    - path: /
+      port: 80
+
+## flagsmith-processor (Task Processor)
+flagsmith-processor:
+  name: "flagsmith-processor"
+  namespace: "platform"
+  serviceAccount:
+    name: "sarvam-flagsmith"
+  node_selector_labels:
+    role: "flagsmith"
+  
+  apply_default_liveness_probe: false
+  replicas: 1
+
+  env:
+  - name: ENVIRONMENT
+    value: "staging"
+  - name: DJANGO_SECRET_KEY
+    value: "secret"
+
+  containers:
+  - name: "flagsmith-processor"
+    image: "flagsmith.docker.scarf.sh/flagsmith/flagsmith"
+    tag: "2.166.0"
+    imagePullPolicy: Always
+
+    env_from:
+    - name: "observe-env"
+      source: "configMapRef"
+
+    resources:
+      requests:
+        cpu: "200m"
+        memory: "512Mi"
+      limits:
+        cpu: "500m"
+        memory: "1024Mi"
+
+  kube_service_config:
+    enabled: false 
+    ports:
+      http:
+        port: 8000
+        protocol: "TCP"
+        targetPort: 8000
+
+  tolerations:
+  - key: "role"
+    operator: "Equal"
+    value: "flagsmith"
+    effect: "NoSchedule"

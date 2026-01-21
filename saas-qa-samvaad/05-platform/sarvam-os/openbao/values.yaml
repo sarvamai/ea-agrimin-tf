@@ -1,0 +1,178 @@
+global:
+  enabled: true
+  tlsDisable: false
+
+injector:
+  enabled: true
+  replicas: 2
+  
+  tolerations:
+    - key: "dedicated"
+      operator: "Equal"
+      value: "openbao"
+      effect: "NoSchedule"
+
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: role
+                operator: In
+                values:
+                  - "openbao"
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - openbao-agent-injector
+          topologyKey: "kubernetes.io/hostname"
+
+server:
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: topology.kubernetes.io/zone
+      whenUnsatisfiable: DoNotSchedule
+      labelSelector:
+        matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+              - openbao
+          - key: component
+            operator: In
+            values:
+              - server
+
+  tolerations:
+    - key: "dedicated"
+      operator: "Equal"
+      value: "openbao"
+      effect: "NoSchedule"
+
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: role
+                operator: In
+                values:
+                  - "openbao"
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - openbao
+              - key: component
+                operator: In
+                values:
+                  - server
+          topologyKey: "kubernetes.io/hostname"
+
+  serviceAccount:
+    create: false
+    name: "openbao-sa"
+
+  extraEnvironmentVars:
+    VAULT_CACERT: /openbao/userconfig/openbao-server-tls/openbao.ca
+    GOOGLE_REGION: "asia-south1"
+    GOOGLE_PROJECT: "saas-qa-samvaad"
+
+  volumes:
+  - name: userconfig-openbao-server-tls
+    secret:
+      defaultMode: 420
+      secretName: openbao-server-tls
+
+  volumeMounts:
+  - mountPath: /openbao/userconfig/openbao-server-tls
+    name: userconfig-openbao-server-tls
+    readOnly: true
+
+  ha:
+    enabled: true
+    replicas: 5
+    raft:
+      enabled: true
+      setNodeId: true
+      config: |
+        ui = true
+
+        listener "tcp" {
+          address = "[::]:8200"
+          cluster_address = "[::]:8201"
+          tls_cert_file = "/openbao/userconfig/openbao-server-tls/openbao.crt"
+          tls_key_file  = "/openbao/userconfig/openbao-server-tls/openbao.key"
+          tls_client_ca_file = "/openbao/userconfig/openbao-server-tls/openbao.ca"
+        }
+
+        seal "gcpckms" {
+          key_ring    = "openbao-keyring"
+          crypto_key  = "openbao-seal-key"
+        }
+
+        storage "raft" {
+          path    = "/openbao/data"
+          
+          # RETRY JOIN LOGIC
+          # Points to the headless service DNS
+          retry_join {
+            leader_api_addr = "https://openbao-0.openbao-internal.openbao.svc.cluster.local:8200"
+            leader_ca_cert_file = "/openbao/userconfig/openbao-server-tls/openbao.ca"
+            leader_client_cert_file = "/openbao/userconfig/openbao-server-tls/openbao.crt"
+            leader_client_key_file = "/openbao/userconfig/openbao-server-tls/openbao.key"
+          }
+          retry_join {
+            leader_api_addr = "https://openbao-1.openbao-internal.openbao.svc.cluster.local:8200"
+            leader_ca_cert_file = "/openbao/userconfig/openbao-server-tls/openbao.ca"
+            leader_client_cert_file = "/openbao/userconfig/openbao-server-tls/openbao.crt"
+            leader_client_key_file = "/openbao/userconfig/openbao-server-tls/openbao.key"
+          }
+          retry_join {
+            leader_api_addr = "https://openbao-2.openbao-internal.openbao.svc.cluster.local:8200"
+            leader_ca_cert_file = "/openbao/userconfig/openbao-server-tls/openbao.ca"
+            leader_client_cert_file = "/openbao/userconfig/openbao-server-tls/openbao.crt"
+            leader_client_key_file = "/openbao/userconfig/openbao-server-tls/openbao.key"
+          }
+           retry_join {
+            leader_api_addr = "https://openbao-3.openbao-internal.openbao.svc.cluster.local:8200"
+            leader_ca_cert_file = "/openbao/userconfig/openbao-server-tls/openbao.ca"
+            leader_client_cert_file = "/openbao/userconfig/openbao-server-tls/openbao.crt"
+            leader_client_key_file = "/openbao/userconfig/openbao-server-tls/openbao.key"
+          }
+           retry_join {
+            leader_api_addr = "https://openbao-4.openbao-internal.openbao.svc.cluster.local:8200"
+            leader_ca_cert_file = "/openbao/userconfig/openbao-server-tls/openbao.ca"
+            leader_client_cert_file = "/openbao/userconfig/openbao-server-tls/openbao.crt"
+            leader_client_key_file = "/openbao/userconfig/openbao-server-tls/openbao.key"
+          }
+        }
+
+  service:
+    headless:
+      enabled: true
+      name: openbao-internal
+
+  dataStorage:
+    enabled: true
+    size: 10Gi
+    storageClass: "premium-rwo"
+    accessMode: ReadWriteOnce
+
+ui:
+  enabled: true
+  serviceType: ClusterIP
+  annotations:
+    # use https protocol to talk to backend
+    konghq.com/protocol: "https"
+    # so that kong can trust k8s CA
+    konghq.com/ca-certificates: "openbao-internal-ca"
+    # for SAN
+    konghq.com/host-header: "openbao-internal.openbao.svc.cluster.local"
