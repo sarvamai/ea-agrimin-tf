@@ -118,7 +118,8 @@ resource "kubectl_manifest" "agrimin_prod_project" {
     metadata = {
       name       = "agri-ministry-prod-fabric"
       namespace  = "argocd"
-      finalizers = ["resources-finalizer.argocd.argoproj.io"]
+      #If this is present, deleting the project deletes the database/kafka.
+      #finalizers = ["resources-finalizer.argocd.argoproj.io"]
     }
     spec = {
       description = "Agrimini Prod GCP"
@@ -140,7 +141,7 @@ resource "kubectl_manifest" "agrimin_prod_sarvam_os_project" {
     metadata = {
       name       = "agri-ministry-prod-sarvam-os"
       namespace  = "argocd"
-      finalizers = ["resources-finalizer.argocd.argoproj.io"]
+      #finalizers = ["resources-finalizer.argocd.argoproj.io"]
     }
     spec = {
       description = "Sarvam OS releases for Agrimini Prod"
@@ -267,6 +268,7 @@ resource "kubectl_manifest" "samvaad_platform" {
             }
           ]
           syncPolicy = {
+            preserveResourcesOnDeletion = true
             syncOptions = [
               "CreateNamespace=true"
             ]
@@ -354,9 +356,11 @@ resource "kubectl_manifest" "agri_ministry_prod_sarvam_os_application_set" {
             }
           ]
           syncPolicy = {
+            preserveResourcesOnDeletion = true
             syncOptions = [
               "ServerSideApply=true"
             ]
+            
           }
           ignoreDifferences = [
             {
