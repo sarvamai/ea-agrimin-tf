@@ -9,6 +9,13 @@ resource "google_storage_bucket_iam_member" "authoring_service_auth_storage_ra" 
   depends_on = [google_service_account.sarvam_app_authoring_gsa]
 }
 
+resource "google_storage_bucket_iam_member" "authoring_service_app_storage_ra" {
+  bucket     = local.app_storage_name
+  role       = "roles/storage.objectAdmin"
+  member     = "serviceAccount:${google_service_account.sarvam_app_authoring_gsa.email}"
+  depends_on = [google_service_account.sarvam_app_authoring_gsa]
+}
+
 resource "google_service_account_iam_member" "authoring_workload_identity_binding" {
   service_account_id = google_service_account.sarvam_app_authoring_gsa.id
   role               = "roles/iam.workloadIdentityUser"

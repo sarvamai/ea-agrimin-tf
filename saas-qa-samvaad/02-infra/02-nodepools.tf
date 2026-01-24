@@ -136,7 +136,6 @@ module "operator_node_pool" {
     max_node_count = 5
   }
 
-
   node_config = {
     machine_type    = "n2d-standard-2"
     image_type      = "UBUNTU_CONTAINERD"
@@ -405,7 +404,6 @@ module "monitoring_node_pool" {
 
 module "kafka_node_pool" {
   source = "../modules/gke-node-pool"
-
 
   project_id     = local.project_id
   location       = local.region

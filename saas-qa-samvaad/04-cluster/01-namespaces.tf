@@ -20,6 +20,7 @@ locals {
     "monitoring",
     "platform",
     "kafka",
+    "test-safety-ns"
   ]
 }
 

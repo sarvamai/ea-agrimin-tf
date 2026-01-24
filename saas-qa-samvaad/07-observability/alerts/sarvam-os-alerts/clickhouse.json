@@ -1,0 +1,474 @@
+[
+  {
+    "name": "ClickHouse Readonly Replica",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "chi_clickhouse_metric_ReadonlyReplica",
+    "threshold": 0,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Hostname:* {{ .Labels.hostname }}\n*Pod:* {{ .Labels.pod }}\n\nCRITICAL: ClickHouse replica is in READONLY mode. Investigate replication or disk issues immediately.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Hostname:* {{ .Labels.hostname }}\n*Pod:* {{ .Labels.pod }}\n\nReadonly replica issue resolved.{{ end }}"
+    },
+    "for": "1m"
+  },
+  {
+    "name": "ClickHouse Too Many Simultaneous Queries",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "chi_clickhouse_metric_Query",
+    "threshold": 100,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nCRITICAL: {{ printf \"%.0f\" .Value }} simultaneous queries running (> 100 max). Investigate slow or blocked queries.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nSimultaneous queries back to normal ({{ printf \"%.0f\" .Value }}).{{ end }}"
+    },
+    "for": "1m"
+  },
+  {
+    "name": "ClickHouse Replication Tasks Stuck",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "chi_clickhouse_metric_ReplicationQueueStuckTasks",
+    "threshold": 0,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nCRITICAL: {{ printf \"%.0f\" .Value }} replication tasks are stuck (high retries or postpones). Data consistency at risk.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nStuck replication tasks have cleared.{{ end }}"
+    },
+    "for": "2m"
+  },
+  {
+    "name": "ClickHouse ZooKeeper Not Available",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "chi_clickhouse_metric_ZooKeeperSession",
+    "threshold": 1,
+    "exec_err_state": "KeepLast",
+    "condition": "lt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nCRITICAL: ZooKeeper session lost. ClickHouse writes are BLOCKED!{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nZooKeeper session restored.{{ end }}"
+    },
+    "for": "30s"
+  },
+  {
+    "name": "ClickHouse Replicated Data Loss",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "increase(chi_clickhouse_event_ReplicatedDataLoss[5m])",
+    "threshold": 0,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nCRITICAL: Data part loss detected in replicated tables! {{ printf \"%.0f\" .Value }} parts lost. Investigate IMMEDIATELY.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nNo further data part loss detected.{{ end }}"
+    },
+    "for": "1m"
+  },
+  {
+    "name": "ClickHouse Insert Rejections",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "increase(chi_clickhouse_event_RejectedInserts[5m])",
+    "threshold": 0,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nCRITICAL: INSERT queries are being REJECTED. {{ printf \"%.0f\" .Value }} rejections in 5m. Too many parts or resource exhaustion.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nInsert rejections stopped.{{ end }}"
+    },
+    "for": "1m"
+  },
+  {
+    "name": "ClickHouse Too Many Parts Critical",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "chi_clickhouse_metric_MaxPartCountForPartition",
+    "threshold": 300,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nCRITICAL: {{ printf \"%.0f\" .Value }} parts in partition (> 300). Inserts may be rejected soon!{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nParts per partition normalized to {{ printf \"%.0f\" .Value }}.{{ end }}"
+    },
+    "for": "2m"
+  },
+  {
+    "name": "ClickHouse Data Mismatch After Merge",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "increase(chi_clickhouse_event_DataAfterMergeDiffersFromReplica[5m])",
+    "threshold": 0,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nCRITICAL: Data after merge differs from replica. Data inconsistency detected!{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nNo recent merge mismatches.{{ end }}"
+    },
+    "for": "1m"
+  },
+  {
+    "name": "ClickHouse Data Mismatch After Mutation",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "increase(chi_clickhouse_event_DataAfterMutationDiffersFromReplica[5m])",
+    "threshold": 0,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nCRITICAL: Data after mutation differs from replica. Investigate mutation consistency.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nNo recent mutation mismatches.{{ end }}"
+    },
+    "for": "1m"
+  },
+  {
+    "name": "ClickHouse Insert Delays",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "chi_clickhouse_metric_DelayedInserts",
+    "threshold": 0,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: {{ printf \"%.0f\" .Value }} INSERT queries being delayed. Monitor parts and merges.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nInsert delays stopped.{{ end }}"
+    },
+    "for": "2m"
+  },
+  {
+    "name": "ClickHouse Too Many Parts Warning",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "chi_clickhouse_metric_MaxPartCountForPartition",
+    "threshold": 150,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: {{ printf \"%.0f\" .Value }} parts in partition (> 150). May cause slowdowns.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nParts per partition normalized.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "ClickHouse DistributedFiles Accumulating",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "chi_clickhouse_metric_DistributedFilesToInsert",
+    "threshold": 50,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: {{ printf \"%.0f\" .Value }} distributed insert files accumulating (> 50). Check replicas and network.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nDistributed inserts back to normal.{{ end }}"
+    },
+    "for": "2m"
+  },
+  {
+    "name": "ClickHouse ZooKeeper Hardware Exceptions",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "increase(chi_clickhouse_event_ZooKeeperHardwareExceptions[5m])",
+    "threshold": 0,
+    "exec_err_state": "KeepLast",
+    "no_data_state": "Ok",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: {{ printf \"%.0f\" .Value }} ZooKeeper hardware exceptions in 5m. Check disk or node health.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nNo recent ZooKeeper hardware exceptions.{{ end }}"
+    },
+    "for": "1m"
+  },
+  {
+    "name": "ClickHouse Replica Not Readable",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "chi_clickhouse_metric_ReadonlyReplica",
+    "threshold": 0,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: One or more replicas are in readonly mode.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nAll replicas are now readable.{{ end }}"
+    },
+    "for": "2m"
+  },
+  {
+    "name": "ClickHouse Detached Parts Present",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "chi_clickhouse_metric_NumberOfDetachedParts",
+    "threshold": 10,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: {{ printf \"%.0f\" .Value }} detached parts exist (> 10). May indicate part removal or corruption.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nDetached parts cleared.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "ClickHouse Dictionary Load Exception",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "chi_clickhouse_metric_DictionaryLoadException",
+    "threshold": 0,
+    "exec_err_state": "KeepLast",
+    "no_data_state": "Ok",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: {{ printf \"%.0f\" .Value }} dictionaries failed to load. Check dictionary configuration.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nAll dictionaries loaded successfully.{{ end }}"
+    },
+    "for": "2m"
+  },
+  {
+    "name": "ClickHouse Replication Lag High",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "chi_clickhouse_metric_ReplicasMaxAbsoluteDelay",
+    "threshold": 300,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: Replication lag is {{ printf \"%.0f\" .Value }}s (> 300s). Replica falling behind.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nReplication lag normalized to {{ printf \"%.0f\" .Value }}s.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "ClickHouse Merge Queue Large",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "chi_clickhouse_metric_Merge",
+    "threshold": 15,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: {{ printf \"%.0f\" .Value }} active merges (> 15). Merge pool may be saturated.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nActive merges normalized to {{ printf \"%.0f\" .Value }}.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "ClickHouse Mutations Stuck",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "chi_clickhouse_metric_MutationsStuck",
+    "threshold": 0,
+    "exec_err_state": "KeepLast",
+    "no_data_state": "Ok",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: {{ printf \"%.0f\" .Value }} mutations are stuck. Check mutation progress.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nNo stuck mutations.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "ClickHouse High Memory Usage",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "100 * chi_clickhouse_metric_MemoryTracking / chi_clickhouse_metric_OSMemoryTotal",
+    "threshold": 80,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: ClickHouse memory usage at {{ printf \"%.1f\" .Value }}% (> 80%). OOM risk.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nMemory usage normalized to {{ printf \"%.1f\" .Value }}%.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "ClickHouse High Disk Usage",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "100 * (1 - chi_clickhouse_metric_DiskFreeBytes / chi_clickhouse_metric_DiskTotalBytes)",
+    "threshold": 80,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Disk:* {{ .Labels.disk }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: Disk usage at {{ printf \"%.1f\" .Value }}% (> 80%). Expand storage or cleanup.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Disk:* {{ .Labels.disk }}\n*Pod:* {{ .Labels.pod }}\n\nDisk usage recovered to {{ printf \"%.1f\" .Value }}%.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "ClickHouse High Connection Count",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "chi_clickhouse_metric_TCPConnection + chi_clickhouse_metric_HTTPConnection + chi_clickhouse_metric_InterserverConnection",
+    "threshold": 100,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: {{ printf \"%.0f\" .Value }} total connections (> 100). Monitor connection usage.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nConnection count normalized to {{ printf \"%.0f\" .Value }}.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "ClickHouse Query Preemptions High",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "rate(chi_clickhouse_metric_QueryPreempted[5m])",
+    "threshold": 10,
+    "exec_err_state": "KeepLast",
+    "no_data_state": "Ok",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: High query preemption rate {{ printf \"%.1f\" .Value }}/s (> 10/s). Thread contention detected.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nQuery preemption rate normalized.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "ClickHouse Restarted",
+    "is_paused": false,
+    "severity": "info",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "chi_clickhouse_metric_Uptime",
+    "threshold": 300,
+    "exec_err_state": "KeepLast",
+    "condition": "lt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nINFO: ClickHouse restarted (uptime: {{ printf \"%.0f\" .Value }}s < 5min). Ensure this was expected.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nClickHouse uptime is now stable.{{ end }}"
+    },
+    "for": "1m"
+  },
+  {
+    "name": "ClickHouse High Query Threads",
+    "is_paused": false,
+    "severity": "info",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "chi_clickhouse_metric_QueryThread",
+    "threshold": 100,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nINFO: {{ printf \"%.0f\" .Value }} concurrent query threads (> 100). High query load.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nQuery thread count normalized.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "ClickHouse S3 Errors",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "increase(chi_clickhouse_event_S3WriteRequestsErrors[5m]) + increase(chi_clickhouse_event_S3ReadRequestsErrors[5m])",
+    "threshold": 0,
+    "exec_err_state": "KeepLast",
+    "no_data_state": "Ok",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: {{ printf \"%.0f\" .Value }} S3 errors in 5m. Check S3 connectivity and permissions.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nNo recent S3 errors.{{ end }}"
+    },
+    "for": "2m"
+  },
+  {
+    "name": "ClickHouse PVC Disk Usage High",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "100 * (kubelet_volume_stats_used_bytes{namespace=\"clickhouse\"} / kubelet_volume_stats_capacity_bytes{namespace=\"clickhouse\"})",
+    "threshold": 80,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*PVC:* {{ .Labels.persistentvolumeclaim }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: ClickHouse PVC disk usage at {{ printf \"%.1f\" .Value }}% (> 80%).{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*PVC:* {{ .Labels.persistentvolumeclaim }}\n*Pod:* {{ .Labels.pod }}\n\nPVC disk usage recovered to {{ printf \"%.1f\" .Value }}%.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "ClickHouse High CPU Usage per Pod",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "100 * (sum by(pod, namespace) (rate(container_cpu_usage_seconds_total{container!=\"\", namespace=\"clickhouse\"}[5m])) / sum by(pod, namespace) (kube_pod_container_resource_requests{resource=\"cpu\", namespace=\"clickhouse\"}))",
+    "threshold": 80,
+    "exec_err_state": "KeepLast",
+    "no_data_state": "Ok",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: CPU usage at {{ printf \"%.1f\" .Value }}% of requests (> 80%).{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nCPU usage recovered to {{ printf \"%.1f\" .Value }}%.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "ClickHouse High Memory Usage per Pod",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "100 * (sum by(pod, namespace) (container_memory_usage_bytes{container!=\"\", namespace=\"clickhouse\"}) / sum by(pod, namespace) (kube_pod_container_resource_requests{resource=\"memory\", namespace=\"clickhouse\"}))",
+    "threshold": 80,
+    "exec_err_state": "KeepLast",
+    "no_data_state": "Ok",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: Memory usage at {{ printf \"%.1f\" .Value }}% of requests (> 80%).{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nMemory usage recovered to {{ printf \"%.1f\" .Value }}%.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "ClickHouse DDL Queue Large",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "chi_clickhouse_metric_DDLQueueSize",
+    "threshold": 10,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: DDL queue size is {{ printf \"%.0f\" .Value }} (> 10). Distributed DDL operations may be delayed or stuck.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nDDL queue size normalized to {{ printf \"%.0f\" .Value }}.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "ClickHouse RWLock Writers Waiting",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "chi_clickhouse_metric_RWLockWaitingWriters",
+    "threshold": 0,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: {{ printf \"%.0f\" .Value }} writers waiting on RWLock. Lock contention detected.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*CHI:* {{ .Labels.chi }}\n*Pod:* {{ .Labels.pod }}\n\nRWLock contention resolved.{{ end }}"
+    },
+    "for": "2m"
+  }
+]

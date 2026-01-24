@@ -11,6 +11,16 @@ resource "kubernetes_secret" "gcs_service_account_secret" {
   }
 }
 
+resource "kubernetes_secret" "gcs_key_secret" {
+  metadata {
+    name      = "gcs-key-secret"
+    namespace = "kafka"
+  }
+  lifecycle {
+    ignore_changes = [data]
+  }
+}
+
 resource "google_service_account" "docker_puller" {
   account_id   = "docker-image-puller"
   display_name = "Docker Image Puller SA"

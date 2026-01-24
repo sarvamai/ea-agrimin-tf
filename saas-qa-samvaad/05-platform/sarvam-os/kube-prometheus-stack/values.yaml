@@ -35,6 +35,7 @@ grafana:
 
   plugins:
     - grafana-clickhouse-datasource
+    - vertamedia-clickhouse-datasource
 
   # Point to Thanos Query for the Global/Deduplicated view
   sidecar:

@@ -71,10 +71,19 @@ locals {
 }
 
 locals {
-  default_slack_channel = "infra"
+  default_slack_channel = "sarvam-os-alerts"
   slack_webhooks = {
-    "api-platform" = ""
-    "apps-agents"  = ""
-    "infra"        = ""
+    "sarvam-os-alerts" = "https://hooks.slack.com/services/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"
   }
+}
+
+data "kubernetes_secret" "chi_grafana_secret" {
+  metadata {
+    name      = "clickhouse-samvaad-db-secrets"
+    namespace = "clickhouse-samvaad"
+  }
+}
+
+locals {
+  chi_grafana_secret = data.kubernetes_secret.chi_grafana_secret.data["CLICKHOUSE_DB_GRAFANA_SECRET"]
 }

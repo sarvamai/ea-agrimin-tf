@@ -46,3 +46,14 @@ resource "kubernetes_secret_v1" "clickhouse_backup_secrets" {
     GCS_CREDENTIALS_JSON = data.google_secret_manager_secret_version.this["clickhouse-backup-credentials"].secret_data
   }
 }
+
+resource "kubernetes_secret_v1" "clickhouse_samvaad_grafana_secrets" {
+  metadata {
+    name      = "clickhouse-samvaad-grafana-secret"
+    namespace = "clickhouse-samvaad"
+  }
+
+  data = {
+    CLICKHOUSE_DB_GRAFANA_SECRET = data.google_secret_manager_secret_version.this["chi-grafana-secret"].secret_data
+  }
+}

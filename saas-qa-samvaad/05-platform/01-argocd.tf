@@ -116,8 +116,8 @@ resource "kubectl_manifest" "agrimin_prod_project" {
     apiVersion = "argoproj.io/v1alpha1"
     kind       = "AppProject"
     metadata = {
-      name       = "agri-ministry-prod-fabric"
-      namespace  = "argocd"
+      name      = "agri-ministry-prod-fabric"
+      namespace = "argocd"
       #If this is present, deleting the project deletes the database/kafka.
       #finalizers = ["resources-finalizer.argocd.argoproj.io"]
     }
@@ -139,8 +139,8 @@ resource "kubectl_manifest" "agrimin_prod_sarvam_os_project" {
     apiVersion = "argoproj.io/v1alpha1"
     kind       = "AppProject"
     metadata = {
-      name       = "agri-ministry-prod-sarvam-os"
-      namespace  = "argocd"
+      name      = "agri-ministry-prod-sarvam-os"
+      namespace = "argocd"
       #finalizers = ["resources-finalizer.argocd.argoproj.io"]
     }
     spec = {
@@ -202,7 +202,7 @@ resource "kubectl_manifest" "agrimin_prod_sarvam_os_project" {
   })
 }
 
-locals{
+locals {
   agrimini_dir_path = "gcp/samvaad/agri-ministry-prod-fabric"
 }
 
@@ -216,6 +216,9 @@ resource "kubectl_manifest" "samvaad_platform" {
       namespace = "argocd"
     }
     spec = {
+      syncPolicy = {
+        preserveResourcesOnDeletion = true
+      }
       goTemplate        = true
       goTemplateOptions = ["missingkey=error"]
       generators = [
@@ -268,10 +271,11 @@ resource "kubectl_manifest" "samvaad_platform" {
             }
           ]
           syncPolicy = {
-            preserveResourcesOnDeletion = true
             syncOptions = [
-              "CreateNamespace=true"
+              "CreateNamespace=true",
+              "Prune=false"
             ]
+            
           }
         }
       }
@@ -280,8 +284,6 @@ resource "kubectl_manifest" "samvaad_platform" {
 
   depends_on = [kubectl_manifest.agrimin_prod_project]
 }
-
-
 
 resource "kubectl_manifest" "agri_ministry_prod_sarvam_os_application_set" {
   yaml_body = yamlencode({
@@ -292,6 +294,9 @@ resource "kubectl_manifest" "agri_ministry_prod_sarvam_os_application_set" {
       namespace = "argocd"
     }
     spec = {
+      syncPolicy = {
+        preserveResourcesOnDeletion = true
+      }
       goTemplate        = true
       goTemplateOptions = ["missingkey=error"]
       generators = [
@@ -356,11 +361,10 @@ resource "kubectl_manifest" "agri_ministry_prod_sarvam_os_application_set" {
             }
           ]
           syncPolicy = {
-            preserveResourcesOnDeletion = true
             syncOptions = [
-              "ServerSideApply=true"
+              "ServerSideApply=true",
+              "Prune=false"
             ]
-            
           }
           ignoreDifferences = [
             {

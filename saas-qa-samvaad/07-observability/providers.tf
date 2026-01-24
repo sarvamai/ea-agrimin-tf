@@ -20,6 +20,10 @@ terraform {
       source  = "gavinbunney/kubectl"
       version = ">= 1.19.0"
     }
+    grafana = {
+      source  = "grafana/grafana"
+      version = "2.10.0"
+    }
   }
 }
 
@@ -48,4 +52,10 @@ provider "helm" {
 provider "kubectl" {
   host  = "https://${local.cluster_dns_endpoint}"
   token = data.google_client_config.main.access_token
+}
+
+provider "grafana" {
+  alias = "selfhosted"
+  url   = "https://${local.grafana_url}"
+  auth  = "glsa_nr11YimSNTtOBnaZx8uXuqKhFjkdLvor_0cfea4b6"
 }
