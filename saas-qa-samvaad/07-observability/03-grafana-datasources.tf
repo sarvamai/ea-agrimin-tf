@@ -10,27 +10,41 @@ data "kubernetes_secret_v1" "clickhouse_samvaad_grafana_password" {
 # Official Grafana ClickHouse Plugin
 # Requires: ClickHouse 22.7+ for ad hoc filters
 # Note: Readonly user must have max_execution_time changeable_in_readonly
-#####################################
+
 resource "grafana_data_source" "datasource_clickhouse_samvaad" {
   provider = grafana.selfhosted
 
   type = "grafana-clickhouse-datasource"
   name = "clickhouse-samvaad-datasource"
 
+  url         = "clickhouse-service.clickhouse-samvaad"
+  access_mode = "proxy"
+
   json_data_encoded = jsonencode({
-    host            = "clickhouse-service.clickhouse-samvaad.svc.cluster.local"
-    port            = 9000
-    protocol        = "native"
-    secure          = false
-    username        = "grafana"
     defaultDatabase = "default"
-    dialTimeout     = "10"
-    queryTimeout    = "60"
+    secure          = false
+    host            = "clickhouse-service.clickhouse-samvaad"
+    logs = {
+      contextColumns       = []
+      defaultTable         = "otel_logs"
+      otelVersion          = "latest"
+      selectContextColumns = true
+    }
+    pdcInjected = false
+    traces = {
+      defaultTable = "otel_traces"
+      durationUnit = "nanoseconds"
+      otelVersion  = "latest"
+    }
+    version  = "4.11.1"
+    port     = "8123"
+    protocol = "http"
+    username = "grafana"
   })
 
   secure_json_data_encoded = jsonencode({
     password = nonsensitive(
-      data.kubernetes_secret_v1.clickhouse_samvaad_grafana_password.data["CLICKHOUSE_DB_GRAFANA_SECRET"]
+     data.kubernetes_secret_v1.clickhouse_samvaad_grafana_password.data["CLICKHOUSE_DB_GRAFANA_SECRET"]
     )
   })
 }
