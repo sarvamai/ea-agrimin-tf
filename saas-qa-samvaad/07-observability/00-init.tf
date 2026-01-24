@@ -70,10 +70,15 @@ locals {
   alerts_sub_folders   = setsubtract(flatten([for k, _ in toset(fileset(local.alerts_path, "**")) : dirname(k)]), ["."])
 }
 
+data "google_secret_manager_secret_version" "slack_sarvamos_alerts_webhooks_secret" {
+  secret  = "slack-sarvamos-alert-webhook-url"
+  version = "latest"
+}
+
 locals {
   default_slack_channel = "sarvam-os-alerts"
   slack_webhooks = {
-    "sarvam-os-alerts" = "https://hooks.slack.com/services/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"
+    "sarvam-os-alerts" = data.google_secret_manager_secret_version.slack_sarvamos_alerts_webhooks_secret.secret_data
   }
 }
 
