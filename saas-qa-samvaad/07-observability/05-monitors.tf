@@ -150,3 +150,116 @@ resource "kubernetes_manifest" "kong_controlplane_podmonitor" {
     }
   }
 }
+
+resource "kubernetes_manifest" "strimzi_kafka_stack_podmonitor" {
+  manifest = {
+    apiVersion = "monitoring.coreos.com/v1"
+    kind       = "PodMonitor"
+    metadata = {
+      name      = "strimzi-kafka-stack"
+      namespace = "monitoring"
+      labels = {
+        release = "prometheus"
+      }
+    }
+    spec = {
+      namespaceSelector = {
+        matchNames = ["kafka"]
+      }
+      selector = {
+        matchExpressions = [
+          {
+            key      = "strimzi.io/kind"
+            operator = "Exists"
+          }
+        ]
+      }
+      podMetricsEndpoints = [
+        {
+          port     = "tcp-prometheus"
+          path     = "/metrics"
+          interval = "30s"
+          relabelings = [
+            {
+              sourceLabels = ["__meta_kubernetes_namespace"]
+              targetLabel  = "namespace"
+            },
+            {
+              sourceLabels = ["__meta_kubernetes_pod_name"]
+              targetLabel  = "pod"
+            },
+            {
+              sourceLabels = ["__meta_kubernetes_pod_label_strimzi_io_kind"]
+              targetLabel  = "strimzi_kind"
+            },
+            {
+              sourceLabels = ["__meta_kubernetes_pod_label_strimzi_io_name"]
+              targetLabel  = "strimzi_name"
+            },
+            {
+              sourceLabels = ["__meta_kubernetes_pod_label_strimzi_io_cluster"]
+              targetLabel  = "kafka_cluster"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+
+resource "kubernetes_manifest" "strimzi_kafka_by_port_podmonitor" {
+  manifest = {
+    apiVersion = "monitoring.coreos.com/v1"
+    kind       = "PodMonitor"
+    metadata = {
+      name      = "strimzi-kafka-by-port"
+      namespace = "monitoring"
+      labels = {
+        release = "prometheus"
+      }
+    }
+    spec = {
+      namespaceSelector = {
+        matchNames = ["kafka"]
+      }
+      selector = {
+        matchLabels = {}
+      }
+      podMetricsEndpoints = [
+        {
+          targetPort = 9404
+          path       = "/metrics"
+          interval   = "30s"
+          relabelings = [
+            {
+              sourceLabels = ["__meta_kubernetes_namespace"]
+              targetLabel  = "namespace"
+            },
+            {
+              sourceLabels = ["__meta_kubernetes_pod_name"]
+              targetLabel  = "pod"
+            },
+            {
+              sourceLabels = ["__meta_kubernetes_pod_label_strimzi_io_kind"]
+              targetLabel  = "strimzi_kind"
+            },
+            {
+              sourceLabels = ["__meta_kubernetes_pod_label_strimzi_io_name"]
+              targetLabel  = "strimzi_name"
+            },
+            {
+              sourceLabels = ["__meta_kubernetes_pod_label_strimzi_io_cluster"]
+              targetLabel  = "kafka_cluster"
+            },
+            {
+              sourceLabels = ["__meta_kubernetes_pod_label_strimzi_io_name"]
+              regex        = ".*-kafka-exporter"
+              targetLabel  = "strimzi_kind"
+              replacement  = "KafkaExporter"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
