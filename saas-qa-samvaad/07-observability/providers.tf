@@ -57,5 +57,5 @@ provider "kubectl" {
 provider "grafana" {
   alias = "selfhosted"
   url   = "https://${local.grafana_url}"
-  auth  = "glsa_nr11YimSNTtOBnaZx8uXuqKhFjkdLvor_0cfea4b6"
+  auth  = data.google_secret_manager_secret_version.grafana_svc_token_secret.secret_data
 }

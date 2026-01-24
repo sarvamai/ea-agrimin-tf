@@ -87,3 +87,8 @@ data "kubernetes_secret" "chi_grafana_secret" {
 locals {
   chi_grafana_secret = data.kubernetes_secret.chi_grafana_secret.data["CLICKHOUSE_DB_GRAFANA_SECRET"]
 }
+
+data "google_secret_manager_secret_version" "grafana_svc_token_secret" {
+  secret  = "grafana-service-token"
+  version = "latest"
+}
