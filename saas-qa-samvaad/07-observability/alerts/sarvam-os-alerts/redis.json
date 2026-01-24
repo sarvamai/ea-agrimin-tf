@@ -1,0 +1,272 @@
+[
+  {
+    "name": "Redis Instance Down",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Redis_HA_Alerting_Runbook.md#redis-001-redis-instance-down",
+    "expression": "redis_up",
+    "threshold": 0,
+    "exec_err_state": "KeepLast",
+    "condition": "eq",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nCRITICAL: Redis instance is DOWN. Check pod status and logs immediately.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nRedis instance is back UP.{{ end }}"
+    },
+    "for": "1m"
+  },
+  {
+    "name": "Redis Memory Usage Critical",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Redis_HA_Alerting_Runbook.md#redis-002-memory-usage-critical",
+    "expression": "100 * (redis_memory_used_bytes / redis_memory_max_bytes)",
+    "threshold": 95,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nCRITICAL: Memory usage at {{ printf \"%.1f\" .Value }}% (> 95%). Risk of OOM or data eviction.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nMemory usage recovered to {{ printf \"%.1f\" .Value }}%.{{ end }}"
+    },
+    "for": "2m"
+  },
+  {
+    "name": "Redis Replication Down",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Redis_HA_Alerting_Runbook.md#redis-003-replication-down-ha-setup",
+    "expression": "redis_connected_slaves{role=\"master\"}",
+    "threshold": 1,
+    "exec_err_state": "KeepLast",
+    "condition": "lt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nCRITICAL: Only {{ printf \"%.0f\" .Value }} replicas connected (expected >= 1). HA at risk.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nReplication restored. {{ printf \"%.0f\" .Value }} replicas connected.{{ end }}"
+    },
+    "for": "2m"
+  },
+  {
+    "name": "Redis High Eviction Rate",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Redis_HA_Alerting_Runbook.md#redis-004-high-eviction-rate",
+    "expression": "rate(redis_evicted_keys_total[5m])",
+    "threshold": 100,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nCRITICAL: Evicting {{ printf \"%.0f\" .Value }} keys/sec (> 100). Severe memory pressure.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nEviction rate normalized to {{ printf \"%.0f\" .Value }} keys/sec.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Redis Connection Exhaustion",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Redis_HA_Alerting_Runbook.md#redis-005-connection-exhaustion",
+    "expression": "redis_connected_clients",
+    "threshold": 10000,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nCRITICAL: {{ printf \"%.0f\" .Value }} connected clients (> 10000). Risk of connection exhaustion.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nConnected clients normalized to {{ printf \"%.0f\" .Value }}.{{ end }}"
+    },
+    "for": "2m"
+  },
+  {
+    "name": "Redis Latency Critical",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Redis_HA_Alerting_Runbook.md#redis-006-high-latency-critical",
+    "expression": "redis_latency_percentiles_usec{quantile=\"0.99\", cmd!~\"ping|replconf\"}",
+    "threshold": 10000,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n*Command:* {{ .Labels.cmd }}\n\nCRITICAL: P99 latency at {{ printf \"%.0f\" .Value }}μs (> 10000μs/10ms). Severely impacting performance.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n*Command:* {{ .Labels.cmd }}\n\nP99 latency recovered to {{ printf \"%.0f\" .Value }}μs.{{ end }}"
+    },
+    "for": "2m"
+  },
+  {
+    "name": "Redis Blocked Clients Critical",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Redis_HA_Alerting_Runbook.md#redis-007-blocked-clients-critical",
+    "expression": "redis_blocked_clients",
+    "threshold": 100,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nCRITICAL: {{ printf \"%.0f\" .Value }} clients blocked (> 100). Check blocking operations.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nBlocked clients recovered to {{ printf \"%.0f\" .Value }}.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Redis Memory Usage Warning",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Redis_HA_Alerting_Runbook.md#redis-008-memory-usage-warning",
+    "expression": "100 * (redis_memory_used_bytes / redis_memory_max_bytes)",
+    "threshold": 80,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: Memory usage elevated at {{ printf \"%.1f\" .Value }}% (> 80%). Monitor trend.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nMemory usage recovered to {{ printf \"%.1f\" .Value }}%.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Redis Latency Warning",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Redis_HA_Alerting_Runbook.md#redis-009-high-latency-warning",
+    "expression": "redis_latency_percentiles_usec{quantile=\"0.95\", cmd!~\"ping|replconf\"}",
+    "threshold": 5000,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n*Command:* {{ .Labels.cmd }}\n\nWARNING: P95 latency elevated at {{ printf \"%.0f\" .Value }}μs (> 5000μs/5ms).{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n*Command:* {{ .Labels.cmd }}\n\nP95 latency recovered to {{ printf \"%.0f\" .Value }}μs.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Redis Low Cache Hit Ratio",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Redis_HA_Alerting_Runbook.md#redis-010-low-cache-hit-ratio",
+    "expression": "100 * (rate(redis_keyspace_hits_total[5m]) / (rate(redis_keyspace_hits_total[5m]) + rate(redis_keyspace_misses_total[5m])))",
+    "threshold": 70,
+    "exec_err_state": "KeepLast",
+    "condition": "lt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: Cache hit ratio at {{ printf \"%.1f\" .Value }}% (< 70%). Inefficient caching.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nCache hit ratio recovered to {{ printf \"%.1f\" .Value }}%.{{ end }}"
+    },
+    "for": "10m"
+  },
+  {
+    "name": "Redis High Connection Count",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Redis_HA_Alerting_Runbook.md#redis-011-high-connection-count",
+    "expression": "redis_connected_clients",
+    "threshold": 5000,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: {{ printf \"%.0f\" .Value }} connected clients (> 5000). Monitor for exhaustion.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nConnected clients normalized to {{ printf \"%.0f\" .Value }}.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Redis High Memory Fragmentation",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Redis_HA_Alerting_Runbook.md#redis-012-high-memory-fragmentation",
+    "expression": "redis_mem_fragmentation_ratio",
+    "threshold": 1.5,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: Memory fragmentation ratio at {{ printf \"%.2f\" .Value }} (> 1.5). Inefficient memory usage.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nMemory fragmentation recovered to {{ printf \"%.2f\" .Value }}.{{ end }}"
+    },
+    "for": "10m"
+  },
+  {
+    "name": "Redis High Expired Keys Rate",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Redis_HA_Alerting_Runbook.md#redis-013-high-expired-keys-rate",
+    "expression": "rate(redis_expired_keys_total[5m])",
+    "threshold": 1000,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: Expiring {{ printf \"%.0f\" .Value }} keys/sec (> 1000). Check TTL configuration.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nExpiration rate normalized to {{ printf \"%.0f\" .Value }} keys/sec.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Redis High CPU Utilization",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Redis_HA_Alerting_Runbook.md#redis-014-high-cpu-utilization",
+    "expression": "100 * k8s_pod_cpu_request_utilization{pod=~\"redis.*\"}",
+    "threshold": 80,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: CPU usage at {{ printf \"%.1f\" .Value }}% of requests (> 80%).{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nCPU usage recovered to {{ printf \"%.1f\" .Value }}%.{{ end }}"
+    },
+    "for": "10m"
+  },
+  {
+    "name": "Redis High Pod Memory Usage",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Redis_HA_Alerting_Runbook.md#redis-015-high-memory-utilization-pod",
+    "expression": "100 * k8s_pod_memory_request_utilization{pod=~\"redis.*\"}",
+    "threshold": 90,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: Pod memory at {{ printf \"%.1f\" .Value }}% of requests (> 90%). Risk of OOMKilled.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nPod memory usage recovered to {{ printf \"%.1f\" .Value }}%.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Redis High Command Rate",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Redis_HA_Alerting_Runbook.md#redis-016-high-command-rate",
+    "expression": "rate(redis_commands_processed_total[5m])",
+    "threshold": 100000,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: Processing {{ printf \"%.0f\" .Value }} commands/sec (> 100000). High workload.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nCommand rate normalized to {{ printf \"%.0f\" .Value }} cmd/sec.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Redis Uptime Low",
+    "is_paused": false,
+    "severity": "info",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Redis_HA_Alerting_Runbook.md#redis-017-uptime-monitoring",
+    "expression": "redis_uptime_in_seconds",
+    "threshold": 300,
+    "exec_err_state": "KeepLast",
+    "condition": "lt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nINFO: Redis recently restarted. Uptime: {{ printf \"%.0f\" .Value }} seconds (< 5 minutes).{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nRedis uptime now stable at {{ printf \"%.0f\" .Value }} seconds.{{ end }}"
+    },
+    "for": "1m"
+  },
+  {
+    "name": "Redis Network IO High",
+    "is_paused": false,
+    "severity": "info",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Redis_HA_Alerting_Runbook.md#redis-018-network-io-monitoring",
+    "expression": "(rate(redis_net_input_bytes_total[5m]) + rate(redis_net_output_bytes_total[5m])) / 1073741824",
+    "threshold": 10,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nINFO: Network I/O at {{ printf \"%.2f\" .Value }} GB/s (> 10 GB/s). Heavy workload.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nNetwork I/O normalized to {{ printf \"%.2f\" .Value }} GB/s.{{ end }}"
+    },
+    "for": "5m"
+  }
+]
