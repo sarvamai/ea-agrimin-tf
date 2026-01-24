@@ -1,0 +1,7 @@
+nodeSelector:
+  role: "operator"
+tolerations:
+- key: "role"
+  operator: "Equal"
+  value: "operator"
+  effect: "NoSchedule"

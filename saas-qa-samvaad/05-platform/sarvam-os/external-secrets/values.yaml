@@ -1,0 +1,12 @@
+bitwarden-sdk-server:
+  enabled: false
+global:
+  nodeSelector:
+    role: operator
+  tolerations:
+  - key: "role"
+    operator: "Equal"
+    value: "operator"
+    effect: "NoSchedule"
+
+replicaCount: 2

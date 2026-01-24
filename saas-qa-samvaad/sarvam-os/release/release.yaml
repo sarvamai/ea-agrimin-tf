@@ -1,0 +1,179 @@
+- app_name: linkerd-crds
+  chart: linkerd-crds
+  repo_url: https://github.com/sarvamai/sarvam-gcp-common-gitops
+  version: "2025.12.2"
+  target_branch: saas-qa-samvaad
+  sync_wave: "-10"
+  namespace: "linkerd"
+  values_path: 05-platform
+
+- app_name: linkerd-control-plane
+  chart: linkerd-control-plane
+  repo_url: https://github.com/sarvamai/sarvam-gcp-common-gitops
+  version: "1.16.11"
+  target_branch: saas-qa-samvaad
+  sync_wave: "0"
+  namespace: "linkerd"
+  values_path: 05-platform
+
+- app_name: zfs-localpv
+  chart: zfs-localpv
+  repo_url: https://github.com/sarvamai/sarvam-gcp-common-gitops
+  version: "2.6.2"
+  target_branch: saas-qa-samvaad 
+  sync_wave: "-10"
+  namespace: "openebs"
+  values_path: 05-platform
+
+- app_name: sarvam-storage-zfs
+  chart: sarvam-storage-zfs
+  repo_url: https://github.com/sarvamai/sarvam-gcp-common-gitops
+  version: "0.1.7"
+  target_branch: saas-qa-samvaad 
+  sync_wave: "-10"
+  namespace: "postgres"
+  values_path: 05-platform
+
+- app_name: cloudnative-pg
+  chart: cloudnative-pg
+  repo_url: https://github.com/sarvamai/sarvam-gcp-common-gitops
+  version: "0.1.3"
+  target_branch: saas-qa-samvaad 
+  sync_wave: "-9"
+  namespace: "postgres"
+  values_path: 05-platform
+
+- app_name: postgres
+  chart: postgres
+  repo_url: https://github.com/sarvamai/sarvam-gcp-common-gitops
+  version: "0.1.2"
+  target_branch: saas-qa-samvaad 
+  sync_wave: "2"
+  namespace: "postgres"
+  values_path: 05-platform
+
+- app_name: kubernetes-replicator
+  chart: kubernetes-replicator
+  repo_url: https://github.com/sarvamai/sarvam-gcp-common-gitops
+  version: "2.9.2"
+  target_branch: saas-qa-samvaad
+  sync_wave: "10"
+  namespace: "kube-system"
+  values_path: 05-platform
+
+- app_name: reloader
+  chart: reloader
+  repo_url: https://github.com/sarvamai/sarvam-gcp-common-gitops
+  version: "2.2.7"
+  target_branch: saas-qa-samvaad
+  sync_wave: "11"
+  namespace: "postgres"
+  values_path: 05-platform
+
+- app_name: kong-cp
+  chart: kong
+  repo_url: https://github.com/sarvamai/sarvam-gcp-common-gitops
+  version: "3.0.1"
+  target_branch: saas-qa-samvaad
+  sync_wave: "10"
+  namespace: "kong"
+  values_path: 05-platform
+
+- app_name: kong-dp
+  chart: kong
+  repo_url: https://github.com/sarvamai/sarvam-gcp-common-gitops
+  version: "3.0.1"
+  target_branch: saas-qa-samvaad
+  sync_wave: "10"
+  namespace: "kong"
+  values_path: 05-platform
+
+- app_name: altinity-clickhouse-operator
+  chart: altinity-clickhouse-operator
+  repo_url: https://github.com/sarvamai/sarvam-gcp-common-gitops
+  version: "0.24.5"
+  target_branch: saas-qa-samvaad 
+  sync_wave: "2"
+  namespace: "clickhouse-samvaad"
+  values_path: 05-platform
+
+- app_name: clickhouse
+  chart: clickhouse
+  repo_url: https://github.com/sarvamai/sarvam-gcp-common-gitops
+  version: "0.1.7"
+  target_branch: saas-qa-samvaad 
+  sync_wave: "2"
+  namespace: "clickhouse-samvaad"
+  values_path: 05-platform
+
+- app_name: redis
+  chart: redis
+  repo_url: https://github.com/sarvamai/sarvam-gcp-common-gitops
+  version: "24.1.0"
+  target_branch: saas-qa-samvaad
+  sync_wave: "5"
+  namespace: "redis"
+  values_path: 05-platform
+
+- app_name: openbao
+  chart: openbao
+  repo_url: https://github.com/sarvamai/sarvam-gcp-common-gitops
+  version: "0.16.2"
+  target_branch: saas-qa-samvaad
+  sync_wave: "5"
+  namespace: "openbao"
+  values_path: 05-platform
+
+- app_name: external-secrets
+  chart: external-secrets
+  repo_url: https://github.com/sarvamai/sarvam-gcp-common-gitops
+  version: "1.2.1"
+  target_branch: saas-qa-samvaad
+  sync_wave: "5"
+  namespace: "external-secrets"
+  values_path: 05-platform
+
+- app_name: kube-prometheus-stack
+  chart: kube-prometheus-stack
+  repo_url: https://github.com/sarvamai/sarvam-gcp-common-gitops
+  version: "80.14.0"
+  target_branch: saas-qa-samvaad
+  sync_wave: "12"
+  namespace: "monitoring"
+  values_path: 05-platform
+
+- app_name: thanos
+  chart: thanos
+  repo_url: https://github.com/sarvamai/sarvam-gcp-common-gitops
+  version: "17.3.1"
+  target_branch: saas-qa-samvaad
+  sync_wave: "12"
+  namespace: "monitoring"
+  values_path: 05-platform
+
+- app_name: flagsmith
+  chart: flagsmith
+  repo_url: https://github.com/sarvamai/sarvam-gcp-common-gitops
+  version: "0.1.3"
+  target_branch: saas-qa-samvaad
+  sync_wave: "12"
+  namespace: "platform"
+  values_path: 05-platform
+
+- app_name: strimzi-kafka-operator
+  chart: strimzi-kafka-operator
+  repo_url: https://github.com/sarvamai/sarvam-gcp-common-gitops
+  version: "0.49.1"
+  target_branch: saas-qa-samvaad
+  sync_wave: "11"
+  namespace: "kafka"
+  values_path: 05-platform
+
+- app_name: kafka-cluster
+  chart: kafka-cluster
+  repo_url: https://github.com/sarvamai/sarvam-gcp-common-gitops
+  version: "0.3.9"
+  target_branch: saas-qa-samvaad
+  sync_wave: "11"
+  namespace: "kafka"
+  values_path: 05-platform

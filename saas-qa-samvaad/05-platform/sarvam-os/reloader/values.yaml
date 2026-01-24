@@ -1,0 +1,41 @@
+# -----------------------------------------------------------------------------
+# RELOADER PRODUCTION VALUES (HA + Platform Pool)
+# -----------------------------------------------------------------------------
+reloader:
+  enableHA: true
+  # Enable HA mode (Running 2 replicas ensures zero downtime during node upgrades)
+  deployment:
+    
+    replicas: 2
+    nodeSelector:
+      role: "operator"
+
+    tolerations:
+      - key: "role"
+        operator: "Equal"
+        value: "operator"
+        effect: "NoSchedule"
+
+    # -------------------------------------------------------------------------
+    # RESOURCES: Minimal but guaranteed
+    # -------------------------------------------------------------------------
+    resources:
+      requests:
+        cpu: "50m"
+        memory: "128Mi"
+      limits:
+        cpu: "200m"
+        memory: "256Mi"
+
+    # -------------------------------------------------------------------------
+    # SECURITY: Run as non-root (Best Practice)
+    # -------------------------------------------------------------------------
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 65534 # nobody
+
+  # Watch globally (Required to see secrets in 'kong' namespace from 'kube-system')
+  watchGlobally: true
+
+  # Log level (info is standard for prod)
+  logLevel: "info"

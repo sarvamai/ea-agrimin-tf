@@ -1,0 +1,119 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rpo-writer
+  namespace: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rpo-writer
+  template:
+    metadata:
+      labels:
+        app: rpo-writer
+    spec:
+      imagePullSecrets:
+      - name: gitopsdocker-registry-credentials
+      containers:
+      - name: rpo-writer
+        image: gitopsdocker.azurecr.io/cnpg-test:latest 
+        imagePullPolicy: IfNotPresent
+        command: ["/app/rpo-writer"]
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+          limits:
+            cpu: "100m"
+            memory: "128Mi"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ha-rpo
+  namespace: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ha-rpo
+  template:
+    metadata:
+      labels:
+        app: ha-rpo
+    spec:
+      imagePullSecrets:
+      - name: gitopsdocker-registry-credentials
+      containers:
+      - name: ha-rpo
+        image: gitopsdocker.azurecr.io/cnpg-test:latest
+        imagePullPolicy: IfNotPresent
+        command: ["/app/ha-rpo"]
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+          limits:
+            cpu: "100m"
+            memory: "128Mi"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dr-rpo
+  namespace: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dr-rpo
+  template:
+    metadata:
+      labels:
+        app: dr-rpo
+    spec:
+      imagePullSecrets:
+      - name: gitopsdocker-registry-credentials
+      containers:
+      - name: dr-rpo
+        image: gitopsdocker.azurecr.io/cnpg-test:latest 
+        imagePullPolicy: IfNotPresent
+        command: ["/app/dr-rpo"]
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+          limits:
+            cpu: "100m"
+            memory: "128Mi"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rto-monitor
+  namespace: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rto-monitor
+  template:
+    metadata:
+      labels:
+        app: rto-monitor
+    spec:
+      imagePullSecrets:
+      - name: gitopsdocker-registry-credentials
+      containers:
+      - name: rto-monitor
+        image: gitopsdocker.azurecr.io/cnpg-test:latest 
+        imagePullPolicy: IfNotPresent
+        command: ["/app/rto"]
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+          limits:
+            cpu: "100m"
+            memory: "128Mi"

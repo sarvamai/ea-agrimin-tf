@@ -1,0 +1,257 @@
+[
+  {
+    "name": "Kong High 5xx Error Rate Critical",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kong_Alerting_Runbook.md#kong-001-high-5xx-error-rate-critical",
+    "expression": "100 * sum(rate(kong_http_requests_total{code=~\"5..\"}[5m])) / sum(rate(kong_http_requests_total[5m]))",
+    "threshold": 5,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Component:* Kong\n\nCRITICAL: High 5xx error rate at {{ printf \"%.2f\" .Value }}% (> 5%). Check upstream services and Kong gateway health.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Component:* Kong\n\n5xx error rate recovered to {{ printf \"%.2f\" .Value }}%.{{ end }}"
+    },
+    "for": "2m"
+  },
+  {
+    "name": "Kong Upstream Target Unhealthy Critical",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kong_Alerting_Runbook.md#kong-002-upstream-target-unhealthy-critical",
+    "expression": "100 * sum(kong_upstream_target_health{state=~\"(unhealthy|dns_error)\"}) / count(kong_upstream_target_health)",
+    "threshold": 50,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Component:* Kong\n\nCRITICAL: {{ printf \"%.1f\" .Value }}% upstream targets unhealthy (> 50%). Service availability at risk.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Component:* Kong\n\nUpstream target health recovered to {{ printf \"%.1f\" .Value }}% unhealthy.{{ end }}"
+    },
+    "for": "2m"
+  },
+  {
+    "name": "Kong High Request Latency P95 Critical",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kong_Alerting_Runbook.md#kong-003-high-request-latency-p95-critical",
+    "expression": "histogram_quantile(0.95, sum by (le) (rate(kong_request_latency_ms_bucket[5m])))",
+    "threshold": 1000,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Component:* Kong\n\nCRITICAL: P95 request latency at {{ printf \"%.0f\" .Value }}ms (> 1000ms). User experience severely impacted.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Component:* Kong\n\nP95 request latency recovered to {{ printf \"%.0f\" .Value }}ms.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Kong High Upstream Latency P95 Critical",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kong_Alerting_Runbook.md#kong-004-high-upstream-latency-p95-critical",
+    "expression": "histogram_quantile(0.95, sum by (le) (rate(kong_upstream_latency_ms_bucket[5m])))",
+    "threshold": 800,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Component:* Kong\n\nCRITICAL: P95 upstream latency at {{ printf \"%.0f\" .Value }}ms (> 800ms). Backend services are slow.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Component:* Kong\n\nP95 upstream latency recovered to {{ printf \"%.0f\" .Value }}ms.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Kong Nginx Connection Exhaustion",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kong_Alerting_Runbook.md#kong-005-nginx-connection-exhaustion",
+    "expression": "sum by (pod) (kong_nginx_connections_total{state=\"accepted\"}) - sum by (pod) (kong_nginx_connections_total{state=\"handled\"})",
+    "threshold": 100,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Pod:* {{ .Labels.pod }}\n\nCRITICAL: {{ printf \"%.0f\" .Value }} connections dropped (> 100). Kong is overloaded or misconfigured.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Pod:* {{ .Labels.pod }}\n\nConnection drops recovered to {{ printf \"%.0f\" .Value }}.{{ end }}"
+    },
+    "for": "2m"
+  },
+  {
+    "name": "Kong High Proxy Latency P95 Critical",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kong_Alerting_Runbook.md#kong-006-high-kong-proxy-latency-p95-critical",
+    "expression": "histogram_quantile(0.95, sum by (le) (rate(kong_kong_latency_ms_bucket[5m])))",
+    "threshold": 50,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Component:* Kong\n\nCRITICAL: P95 Kong proxy latency at {{ printf \"%.0f\" .Value }}ms (> 50ms). Kong overhead is too high.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Component:* Kong\n\nP95 Kong proxy latency recovered to {{ printf \"%.0f\" .Value }}ms.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Kong High 5xx Error Rate Warning",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kong_Alerting_Runbook.md#kong-007-high-5xx-error-rate-warning",
+    "expression": "100 * sum(rate(kong_http_requests_total{code=~\"5..\"}[5m])) / sum(rate(kong_http_requests_total[5m]))",
+    "threshold": 1,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Component:* Kong\n\nWARNING: Elevated 5xx error rate at {{ printf \"%.2f\" .Value }}% (> 1%). Investigate before it becomes critical.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Component:* Kong\n\n5xx error rate recovered to {{ printf \"%.2f\" .Value }}%.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Kong High 4xx Error Rate",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kong_Alerting_Runbook.md#kong-008-high-4xx-error-rate",
+    "expression": "100 * sum(rate(kong_http_requests_total{code=~\"4..\"}[5m])) / sum(rate(kong_http_requests_total[5m]))",
+    "threshold": 10,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Component:* Kong\n\nWARNING: High 4xx error rate at {{ printf \"%.2f\" .Value }}% (> 10%). Check auth config, rate limits, and route configuration.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Component:* Kong\n\n4xx error rate recovered to {{ printf \"%.2f\" .Value }}%.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Kong High Request Latency P95 Warning",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kong_Alerting_Runbook.md#kong-009-high-request-latency-p95-warning",
+    "expression": "histogram_quantile(0.95, sum by (le) (rate(kong_request_latency_ms_bucket[5m])))",
+    "threshold": 500,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Component:* Kong\n\nWARNING: P95 request latency elevated at {{ printf \"%.0f\" .Value }}ms (> 500ms). Monitor trend.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Component:* Kong\n\nP95 request latency recovered to {{ printf \"%.0f\" .Value }}ms.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Kong High Upstream Latency P95 Warning",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kong_Alerting_Runbook.md#kong-010-high-upstream-latency-p95-warning",
+    "expression": "histogram_quantile(0.95, sum by (le) (rate(kong_upstream_latency_ms_bucket[5m])))",
+    "threshold": 400,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Component:* Kong\n\nWARNING: P95 upstream latency elevated at {{ printf \"%.0f\" .Value }}ms (> 400ms). Backend performance degraded.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Component:* Kong\n\nP95 upstream latency recovered to {{ printf \"%.0f\" .Value }}ms.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Kong High Proxy Latency P95 Warning",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kong_Alerting_Runbook.md#kong-011-high-kong-proxy-latency-p95-warning",
+    "expression": "histogram_quantile(0.95, sum by (le) (rate(kong_kong_latency_ms_bucket[5m])))",
+    "threshold": 20,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Component:* Kong\n\nWARNING: P95 Kong proxy latency elevated at {{ printf \"%.0f\" .Value }}ms (> 20ms). Review plugin performance.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Component:* Kong\n\nP95 Kong proxy latency recovered to {{ printf \"%.0f\" .Value }}ms.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Kong Request Rate Spike",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kong_Alerting_Runbook.md#kong-012-high-request-rate-spike",
+    "expression": "sum(rate(kong_http_requests_total[1m])) / avg_over_time(sum(rate(kong_http_requests_total[1m]))[1h:])",
+    "threshold": 2,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Component:* Kong\n\nWARNING: Request rate spike detected at {{ printf \"%.1f\" .Value }}x normal (> 2x). Verify if legitimate or potential attack.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Component:* Kong\n\nRequest rate normalized to {{ printf \"%.1f\" .Value }}x average.{{ end }}"
+    },
+    "for": "2m"
+  },
+  {
+    "name": "Kong Upstream Target Health Degradation",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kong_Alerting_Runbook.md#kong-013-upstream-target-health-degradation",
+    "expression": "100 * sum(kong_upstream_target_health{state=~\"(unhealthy|dns_error)\"}) / count(kong_upstream_target_health)",
+    "threshold": 25,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Component:* Kong\n\nWARNING: {{ printf \"%.1f\" .Value }}% upstream targets unhealthy (> 25%). Monitor trend.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Component:* Kong\n\nUpstream target health recovered to {{ printf \"%.1f\" .Value }}% unhealthy.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Kong High Nginx Active Connections",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kong_Alerting_Runbook.md#kong-014-high-nginx-active-connections",
+    "expression": "sum by (pod) (kong_nginx_connections_total{state=\"active\"})",
+    "threshold": 1000,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Pod:* {{ .Labels.pod }}\n\nWARNING: {{ printf \"%.0f\" .Value }} active connections (> 1000). Approaching capacity limits.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Pod:* {{ .Labels.pod }}\n\nActive connections recovered to {{ printf \"%.0f\" .Value }}.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Kong High Bandwidth Usage",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kong_Alerting_Runbook.md#kong-015-high-bandwidth-usage",
+    "expression": "sum(irate(kong_bandwidth_bytes[1m])) / 1000000000",
+    "threshold": 1,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Component:* Kong\n\nWARNING: High bandwidth at {{ printf \"%.2f\" .Value }} Gbps (> 1 Gbps). Check for large payloads or high traffic.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Component:* Kong\n\nBandwidth recovered to {{ printf \"%.2f\" .Value }} Gbps.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Kong High Request Latency P99",
+    "is_paused": false,
+    "severity": "info",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kong_Alerting_Runbook.md#kong-016-high-request-latency-p99",
+    "expression": "histogram_quantile(0.99, sum by (le) (rate(kong_request_latency_ms_bucket[5m])))",
+    "threshold": 2000,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Component:* Kong\n\nINFO: P99 request latency at {{ printf \"%.0f\" .Value }}ms (> 2000ms). Tail latency is high.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Component:* Kong\n\nP99 request latency recovered to {{ printf \"%.0f\" .Value }}ms.{{ end }}"
+    },
+    "for": "10m"
+  },
+  {
+    "name": "Kong High Request Rate",
+    "is_paused": false,
+    "severity": "info",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kong_Alerting_Runbook.md#kong-017-high-request-rate-info",
+    "expression": "sum(rate(kong_http_requests_total[1m]))",
+    "threshold": 1000,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Component:* Kong\n\nINFO: Request rate at {{ printf \"%.0f\" .Value }} req/s (> 1000 req/s). For capacity planning.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Component:* Kong\n\nRequest rate recovered to {{ printf \"%.0f\" .Value }} req/s.{{ end }}"
+    },
+    "for": "5m"
+  }
+]

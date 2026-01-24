@@ -1,0 +1,103 @@
+# -----------------------------------------------------------------------------
+# KONG DATA PLANE (DP)
+# -----------------------------------------------------------------------------
+env:
+  role: data_plane
+  database: "off"
+  cluster_control_plane: kong-cp-kong-cluster.kong.svc.cluster.local:8005
+
+podAnnotations:
+  reloader.stakater.com/search: "true"
+
+replicaCount: 3
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 65
+
+pdb:
+  enabled: true
+  minAvailable: 2
+
+resources:
+  requests:
+    cpu: 2000m
+    memory: 2Gi
+  limits:
+    cpu: 4000m
+    memory: 4Gi
+
+nodeSelector:
+  role: "gateway"
+tolerations:
+  - key: "role"
+    operator: "Equal"
+    value: "gateway"
+    effect: "NoSchedule"
+
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: topology.kubernetes.io/zone
+              operator: In
+              values:
+                - asia-south1-a
+                - asia-south1-b
+                - asia-south1-c
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/instance
+                operator: In
+                values:
+                  - kong-dp
+          topologyKey: "topology.kubernetes.io/zone"
+
+proxy:
+  enabled: true
+  type: LoadBalancer
+  loadBalancerIP: 35.244.0.79
+
+ingressController:
+  enabled: false
+
+# -----------------------------------------------------------------------------
+# CERTIFICATES
+# Removing 'secretVolumes' because the chart creates the volume automatically 
+# when certificates.cluster.enabled is true.
+# -----------------------------------------------------------------------------
+cluster:
+  enabled: true
+  tls:
+    enabled: true
+    verify: on
+    # DEFAULT MOUNT PATH: /etc/secrets/<cert-common-name>/
+    # The chart derives the mount path from the certificate commonName or the secret name.
+    # We will let the chart handle the volume, but we point to the files:
+    cert: /etc/secrets/kong-cluster-cert/tls.crt
+    cert_key: /etc/secrets/kong-cluster-cert/tls.key
+    trusted_ca_cert: /etc/secrets/kong-cluster-cert/ca.crt
+
+certificates:
+  enabled: true
+  issuer: kong-ca-issuer
+  cluster:
+    enabled: true
+    commonName: kong-dp-kong-cluster.kong.svc.cluster.local
+    dnsNames:
+      - kong-dp-kong-cluster.kong.svc.cluster.local
+      - kong-cp-kong-cluster.kong.svc.cluster.local
+      - localhost

@@ -1,0 +1,217 @@
+# -----------------------------------------------------------------------------
+# GLOBAL CONFIGURATION
+# -----------------------------------------------------------------------------
+# 1. Use the existing secret containing your S3 config (objstore.yml)
+
+global:
+  security:
+    allowInsecureImages: true
+
+existingObjstoreSecret: thanos-objstore
+
+# 2. Use the IRSA Service Account we created in Terraform
+serviceAccount:
+  create: false
+# -----------------------------------------------------------------------------
+# IMAGE CONFIGURATION
+# -----------------------------------------------------------------------------
+image:
+  registry: bitnamilegacy
+  repository: thanos
+  # tag: ... (Defaults to chart version, usually fine)
+
+# -----------------------------------------------------------------------------
+# QUERY (The Aggregator & Deduplicator)
+# -----------------------------------------------------------------------------
+query:
+  enabled: true
+  
+  serviceAccount:
+    create: false
+    name: monitoring-service
+
+  replicaCount: 3
+  
+  # DEDUPLICATION: Tells Thanos to merge data from replica-0 and replica-1
+  replicaLabel: [prometheus_replica]
+  
+  # Auto-discovery of Prometheus Sidecars
+  dnsDiscovery:
+    enabled: true
+    sidecarsService: "prometheus-operated"
+    sidecarsNamespace: "monitoring"
+
+  # PLACEMENT (Critical for your Taints)
+  nodeSelector:
+    role: monitoring
+  tolerations:
+    - key: "role"
+      operator: "Equal"
+      value: "monitoring"
+      effect: "NoSchedule"
+
+  resources:
+    requests:
+      cpu: 1
+      memory: 3Gi
+    limits:
+      cpu: 2
+      memory: 4Gi
+      
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+
+# -----------------------------------------------------------------------------
+# QUERY FRONTEND (Caching & Splitting)
+# -----------------------------------------------------------------------------
+queryFrontend:
+  enabled: true
+
+  serviceAccount:
+    create: false
+    name: monitoring-service
+
+  replicaCount: 2
+  
+  nodeSelector:
+    role: monitoring
+  tolerations:
+    - key: "role"
+      operator: "Equal"
+      value: "monitoring"
+      effect: "NoSchedule"
+
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+      
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      interval: 1m
+
+# -----------------------------------------------------------------------------
+# STORE GATEWAY (Reads from S3)
+# -----------------------------------------------------------------------------
+storegateway:
+  enabled: true
+
+  serviceAccount:
+    create: false
+    name: monitoring-service
+
+  replicaCount: 2
+  
+  persistence:
+    enabled: true
+    storageClass: "premium-rwo"
+    size: 50Gi 
+
+  nodeSelector:
+    role: monitoring
+  tolerations:
+    - key: "role"
+      operator: "Equal"
+      value: "monitoring"
+      effect: "NoSchedule"
+
+  resources:
+    requests:
+      cpu: 1
+      memory: 3Gi
+    limits:
+      cpu: 2
+      memory: 5Gi
+
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      interval: 2m
+
+# -----------------------------------------------------------------------------
+# COMPACTOR (Downsampling & Retention)
+# -----------------------------------------------------------------------------
+compactor:
+  enabled: true
+
+  serviceAccount:
+    create: false
+    name: monitoring-service
+
+  persistence:
+    enabled: true
+    storageClass: "premium-rwo"
+    size: 150Gi
+    
+  # Retention Policies
+  retentionResolutionRaw: 7d
+  retentionResolution5m: 90d
+  retentionResolution1h: 540d
+
+  nodeSelector:
+    role: monitoring
+  tolerations:
+    - key: "role"
+      operator: "Equal"
+      value: "monitoring"
+      effect: "NoSchedule"
+
+  resources:
+    requests:
+      cpu: 1500m
+      memory: 3Gi
+    limits:
+      cpu: 2000m
+      memory: 5Gi
+
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      interval: 5m
+
+# -----------------------------------------------------------------------------
+# BUCKET WEB (UI for S3 Blocks)
+# -----------------------------------------------------------------------------
+bucketweb:
+  enabled: true
+
+  serviceAccount:
+    create: false
+    name: monitoring-service
+    
+  nodeSelector:
+    role: monitoring
+  tolerations:
+    - key: "role"
+      operator: "Equal"
+      value: "monitoring"
+      effect: "NoSchedule"
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 200m
+      memory: 512Mi
+      
+  metrics:
+    enabled: false
+    serviceMonitor:
+      enabled: true
+      interval: 2m
+
+# -----------------------------------------------------------------------------
+# MINIO (DISABLED)
+# -----------------------------------------------------------------------------
+minio:
+  enabled: false

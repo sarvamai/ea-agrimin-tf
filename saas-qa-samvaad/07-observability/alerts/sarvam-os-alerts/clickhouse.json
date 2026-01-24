@@ -1,0 +1,363 @@
+[
+  {
+    "name": "Clickhouse Readonly ReplicaMode",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "select value from system.metrics where metric='ReadonlyReplica'",
+    "threshold": 0,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "*Component:* ClickHouse\n\nCRITICAL: Readonly Replica Detected. The ClickHouse server has entered ReadonlyReplica mode. Investigate replication or disk issues.",
+      "ResolvedAlertValues": "*Component:* ClickHouse\n\nReadonly Replica issue resolved. ClickHouse is no longer in ReadonlyReplica mode."
+    },
+    "for": "1m"
+  },
+  {
+    "name": "Clickhouse Too many simultaneous queries",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "select value from system.metrics where metric = 'Query'",
+    "threshold": 100,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "*Component:* ClickHouse\n\nWARNING: Too many simultaneous queries running (> 100). Investigate slow or blocked queries.",
+      "ResolvedAlertValues": "*Component:* ClickHouse\n\nSimultaneous queries back to normal."
+    },
+    "for": "1m"
+  },
+  {
+    "name": "Clickhouse Replication Tasks Stuck",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "select count() from system.replication_queue where num_tries > 100 or num_postponed > 1000",
+    "threshold": 0,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "*Component:* ClickHouse\n\nCRITICAL: Some replication tasks are stuck due to high retries or postpones. Investigate replication issues.",
+      "ResolvedAlertValues": "*Component:* ClickHouse\n\nStuck replication tasks have cleared."
+    },
+    "for": "1m"
+  },
+  {
+    "name": "ZooKeeper Not Available",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "select count() from system.zookeeper where path='/'",
+    "threshold": 0,
+    "exec_err_state": "KeepLast",
+    "condition": "eq",
+    "annotations": {
+      "FiringAlertValues": "*Component:* ClickHouse\n\nCRITICAL: ZooKeeper is unavailable. ClickHouse cannot access root path '/'.",
+      "ResolvedAlertValues": "*Component:* ClickHouse\n\nZooKeeper root path access restored."
+    },
+    "for": "1m"
+  },
+  {
+    "name": "Too Many Parts in Partition",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "select value from system.asynchronous_metrics where metric = 'MaxPartCountForPartition'",
+    "threshold": 5000,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "*Component:* ClickHouse\n\nWARNING: Too many parts in partition (> 5000). This can slow queries and cause insert delays.",
+      "ResolvedAlertValues": "*Component:* ClickHouse\n\nPartition part count has normalized."
+    },
+    "for": "1m"
+  },
+  {
+    "name": "Insert Delays",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "select value from system.metrics where metric = 'DelayedInserts'",
+    "threshold": 0,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "*Component:* ClickHouse\n\nCRITICAL: INSERT queries are being delayed. Monitor parts and merges.",
+      "ResolvedAlertValues": "*Component:* ClickHouse\n\nInsert delays have stopped."
+    },
+    "for": "1m"
+  },
+  {
+    "name": "Insert Rejections",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "select value from system.events where event = 'RejectedInserts'",
+    "threshold": 0,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "*Component:* ClickHouse\n\nCRITICAL: INSERT queries are being rejected due to overload or limits. Investigate resource bottlenecks.",
+      "ResolvedAlertValues": "*Component:* ClickHouse\n\nINSERT rejection has stopped."
+    },
+    "for": "1m"
+  },
+  {
+    "name": "ClickHouse Restart Detected",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "select value from system.asynchronous_metrics where metric = 'Uptime'",
+    "threshold": 300,
+    "exec_err_state": "KeepLast",
+    "condition": "lt",
+    "annotations": {
+      "FiringAlertValues": "*Component:* ClickHouse\n\nWARNING: ClickHouse restarted (uptime < 5 minutes). Ensure this was expected.",
+      "ResolvedAlertValues": "*Component:* ClickHouse\n\nClickHouse uptime is now stable."
+    },
+    "for": "1m"
+  },
+  {
+    "name": "DistributedFilesToInsert Increasing",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "select value from system.metrics where metric = 'DistributedFilesToInsert'",
+    "threshold": 100,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "*Component:* ClickHouse\n\nWARNING: Files for distributed inserts are accumulating (> 100). Check replicas and network.",
+      "ResolvedAlertValues": "*Component:* ClickHouse\n\nDistributed inserts back to normal."
+    },
+    "for": "1m"
+  },
+  {
+    "name": "Replicated Data Loss",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "select value from system.events where event = 'ReplicatedDataLoss'",
+    "threshold": 0,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "*Component:* ClickHouse\n\nCRITICAL: Data part loss detected in replicated tables. Investigate immediately.",
+      "ResolvedAlertValues": "*Component:* ClickHouse\n\nNo further data part loss detected."
+    },
+    "for": "1m"
+  },
+  {
+    "name": "Data Part Mismatch Across Replicas - Merge",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "select value from system.events where event = 'DataAfterMergeDiffersFromReplica'",
+    "threshold": 0,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "*Component:* ClickHouse\n\nCRITICAL: Data after merge differs from replica. Potential inconsistency.",
+      "ResolvedAlertValues": "*Component:* ClickHouse\n\nNo recent merge mismatches across replicas."
+    },
+    "for": "1m"
+  },
+  {
+    "name": "Data Part Mismatch Across Replicas - Mutation",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "select value from system.events where event = 'DataAfterMutationDiffersFromReplica'",
+    "threshold": 0,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "*Component:* ClickHouse\n\nCRITICAL: Data after mutation differs from replica. Investigate mutation consistency.",
+      "ResolvedAlertValues": "*Component:* ClickHouse\n\nNo recent mutation mismatches across replicas."
+    },
+    "for": "1m"
+  },
+  {
+    "name": "ClickHouse High Query Memory Usage",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "SELECT max(memory_usage) FROM system.query_log WHERE event_time >= now() - INTERVAL 2 MINUTE",
+    "threshold": 10200547328,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "*Component:* ClickHouse\n\nWARNING: Query memory usage exceeded 9.5 GB in the past 2 minutes. Investigate expensive queries.",
+      "ResolvedAlertValues": "*Component:* ClickHouse\n\nQuery memory usage is below 9.5 GB again."
+    },
+    "for": "2m"
+  },
+  {
+    "name": "ClickHouse Replica Not Readable",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "SELECT count() FROM system.replicas WHERE is_readonly = 1",
+    "threshold": 0,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "*Component:* ClickHouse\n\nCRITICAL: One or more replicas are in readonly mode and not readable.",
+      "ResolvedAlertValues": "*Component:* ClickHouse\n\nAll replicas are now readable."
+    },
+    "for": "1m"
+  },
+  {
+    "name": "ZooKeeper Hardware Exceptions",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "SELECT value FROM system.events WHERE event = 'ZooKeeperHardwareExceptions'",
+    "threshold": 74,
+    "exec_err_state": "OK",
+    "no_data_state": "OK",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "*Component:* ClickHouse\n\nWARNING: ZooKeeper hardware exceptions detected (> 74). Check disk or node health.",
+      "ResolvedAlertValues": "*Component:* ClickHouse\n\nNo recent ZooKeeper hardware exceptions."
+    },
+    "for": "1m"
+  },
+  {
+    "name": "Insufficient Replicas in Cluster",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "SELECT count() FROM system.replicas WHERE is_session_expired OR is_readonly",
+    "threshold": 0,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "*Component:* ClickHouse\n\nCRITICAL: One or more replicas are not healthy or expired.",
+      "ResolvedAlertValues": "*Component:* ClickHouse\n\nAll replicas in all clusters are healthy."
+    },
+    "for": "1m"
+  },
+  {
+    "name": "Detached Parts Present",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "SELECT count() FROM system.detached_parts",
+    "threshold": 20,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "*Component:* ClickHouse\n\nWARNING: Detached parts exist on disk (> 20). May indicate part removal or corruption.",
+      "ResolvedAlertValues": "*Component:* ClickHouse\n\nDetached parts have been cleared."
+    },
+    "for": "1m"
+  },
+  {
+    "name": "Dictionary Load Exception",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "SELECT count() FROM system.dictionaries WHERE last_exception != ''",
+    "threshold": 0,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "*Component:* ClickHouse\n\nWARNING: One or more dictionaries failed to load due to exceptions.",
+      "ResolvedAlertValues": "*Component:* ClickHouse\n\nAll dictionaries loaded without exceptions."
+    },
+    "for": "1m"
+  },
+  {
+    "name": "ClickHouse Too Many Parts In Partition",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "SELECT value FROM system.asynchronous_metrics WHERE metric = 'MaxPartCountForPartition'",
+    "threshold": 500,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "*Component:* ClickHouse\n\nCRITICAL: Partition has more than 500 parts. This can slow queries and block inserts.",
+      "ResolvedAlertValues": "*Component:* ClickHouse\n\nPartition part count is now below threshold."
+    },
+    "for": "1m"
+  },
+  {
+    "name": "ClickHouse High Total Active Parts",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "SELECT count() FROM system.parts WHERE active",
+    "threshold": 649,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "*Component:* ClickHouse\n\nWARNING: Total active parts across all tables exceeded 650. Investigate slow merges or over-insertion.",
+      "ResolvedAlertValues": "*Component:* ClickHouse\n\nTotal active parts are back to normal."
+    },
+    "for": "2m"
+  },
+  {
+    "name": "ClickHouse High Active Parts in EngagementFacts",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "SELECT count() FROM system.parts WHERE active AND table = 'EngagementFacts'",
+    "threshold": 70,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "*Component:* ClickHouse\n*Table:* EngagementFacts\n\nWARNING: Active parts exceeded 70. Check for delayed merges or insert batching issues.",
+      "ResolvedAlertValues": "*Component:* ClickHouse\n*Table:* EngagementFacts\n\nActive parts are back below threshold."
+    },
+    "for": "2m"
+  },
+  {
+    "name": "ClickHouse High Active Parts in InteractionMessages",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "SELECT count() FROM system.parts WHERE active AND table = 'InteractionMessages'",
+    "threshold": 50,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "*Component:* ClickHouse\n*Table:* InteractionMessages\n\nWARNING: Active parts exceeded 50. Check merge settings or insert patterns.",
+      "ResolvedAlertValues": "*Component:* ClickHouse\n*Table:* InteractionMessages\n\nActive parts are back below threshold."
+    },
+    "for": "2m"
+  },
+  {
+    "name": "ClickHouse High Active Parts in EngagementContextData",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "SELECT count() FROM system.parts WHERE active AND table = 'EngagementContextData'",
+    "threshold": 30,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "*Component:* ClickHouse\n*Table:* EngagementContextData\n\nWARNING: Active parts exceeded 30. This may slow down merges or affect insert performance.",
+      "ResolvedAlertValues": "*Component:* ClickHouse\n*Table:* EngagementContextData\n\nActive parts are back within acceptable range."
+    },
+    "for": "2m"
+  },
+  {
+    "name": "ClickHouse High Active Parts in EngagementAudioInfo",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-monitoring/",
+    "expression": "SELECT count() FROM system.parts WHERE active AND table = 'EngagementAudioInfo'",
+    "threshold": 30,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "*Component:* ClickHouse\n*Table:* EngagementAudioInfo\n\nWARNING: Active parts exceeded 30. This can delay merges or lead to insert issues.",
+      "ResolvedAlertValues": "*Component:* ClickHouse\n*Table:* EngagementAudioInfo\n\nActive parts are back within threshold."
+    },
+    "for": "2m"
+  }
+]

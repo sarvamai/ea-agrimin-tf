@@ -1,0 +1,55 @@
+# 1. Global Configurations
+analytics:
+  enabled: true   # Set to false if you don't want to send usage data
+
+# 2. ZFS Node Agent (DaemonSet)
+zfsNode:
+  kubeletDir: /var/lib/kubelet   # CRITICAL for AKS/GKE
+
+  # Ensure it never gets evicted
+  priorityClassName: system-node-critical
+  nodeSelector:
+    role: pg
+  tolerations:
+    - key: role
+      operator: Equal
+      value: pg
+      effect: NoSchedule
+
+  # Resource tuning
+  resources:
+    requests:
+      memory: 50Mi
+      cpu: 50m
+    limits:
+      memory: 200Mi
+      cpu: 200m
+
+# 3. ZFS Controller (Deployment)
+zfsController:
+  replicas: 1
+
+  # Run controller on appropriate nodes
+  tolerations:
+    - key: role
+      operator: Equal
+      value: operator
+      effect: NoSchedule
+  nodeSelector:
+    role: operator
+
+  resources:
+    requests:
+      memory: 50Mi
+      cpu: 50m
+
+# 4. CRD Management
+crds:
+  zfsLocalPv:
+    enabled: true
+    keep: true
+
+  csi:
+    volumeSnapshots:
+      enabled: false
+      keep: true

@@ -1,0 +1,31 @@
+zfsDeamonset:
+  enabled: true
+  cloud: "gcp" # other supported type is "azure"
+  setupContainer:
+    image: ubuntu:22.04
+  
+  tolerations:
+  - key: "role"
+    operator: "Equal"
+    value: "pg"
+    effect: "NoSchedule"
+  
+  nodeSelector:
+    role: "pg"
+
+storageClass:
+  enabled: true
+  provisioner: zfs.csi.openebs.io
+  reclaimPolicy: Retain
+  parameters:
+    fstype: zfs
+    poolname: zfspv-pool
+    # Prevent write amplification (128K read to modify 8K)
+    recordsize: "8k"
+    # Fast compression – usually improves NVMe performance
+    compression: lz4
+    # Performance safety
+    dedup: "off"        # NEVER enable for databases (RAM killer)
+    sync: standard      # Let Postgres manage fsync
+    # Thin provisioning
+    thinprovision: "yes"

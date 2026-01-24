@@ -1,0 +1,147 @@
+cluster:
+  #mode: recovery # after sometime
+
+  # recovery:
+  #   # 2. Use object_store to pull from GCS
+  #   method: object_store
+    
+  #   # 3. This MUST match the 'name' of the cluster that took the backup
+  #   clusterName: "postgres-cluster" 
+    
+  #   # 4. GCS Configuration
+  #   provider: google
+  #   destinationPath: "gs://saas-qa-samvaad-pg-backup/backups"
+  #   google:
+  #     bucket: "saas-qa-samvaad-pg-backup"
+  #     path: "/backups"
+  #     gkeEnvironment: true # Uses Workload Identity
+
+  cluster:
+    # Keep your existing production configurations
+    instances: 2
+    imageName: ghcr.io/cloudnative-pg/postgresql:17.6-system-trixie
+
+    serviceAccountTemplate:
+      metadata:
+        annotations:
+          iam.gke.io/gcp-service-account: cnpg-backup-sa@saas-qa-samvaad.iam.gserviceaccount.com
+    
+    storage:
+      storageClass: "zfs-postgres-nvme"
+      size: 1400Gi
+
+    # Ensure it lands on your ZFS nodes
+    affinity:
+      nodeSelector:
+        role: pg
+      enablePodAntiAffinity: true
+      topologyKey: topology.kubernetes.io/zone
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: role
+                  operator: In
+                  values:
+                    - "pg"
+      tolerations:
+      - key: "role"
+        operator: "Equal"
+        value: "pg"
+        effect: "NoSchedule"
+
+    roles:
+      - name: kong
+        connectionLimit: -1
+        ensure: present
+        login: true
+        superuser: false
+        createdb: false
+        inherit: true
+        createrole: false
+        passwordSecret:
+          name: kong-db-creds
+
+      - name: grafana
+        connectionLimit: -1
+        ensure: present
+        login: true
+        superuser: false
+        createdb: false
+        inherit: true
+        createrole: false
+        passwordSecret:
+          name: grafana-db-creds
+      
+      - name: samvaad
+        connectionLimit: -1
+        ensure: present
+        login: true
+        superuser: false
+        createdb: false
+        inherit: true
+        createrole: false
+        passwordSecret:
+          name: samvaad-db-creds
+
+    # Keep your performance tunings (shared_buffers, shared_preload_libraries, etc.)
+    postgresql:
+      parameters:
+        # --- MEMORY ---
+        shared_buffers: "16GB"
+        effective_cache_size: "48GB"
+        maintenance_work_mem: "2GB"
+        work_mem: "64MB"
+
+        # --- ZFS OPTIMIZATIONS ---
+        # If instance is 1, i.e If not HA we can turn this off for faster perf
+        full_page_writes: "on"
+        wal_log_hints: "on"
+        wal_init_zero: "off"
+        wal_recycle: "off"
+
+        # --- CHECKPOINTS ---
+        checkpoint_timeout: "15min"
+        max_wal_size: "8GB"
+        checkpoint_completion_target: "0.9"
+
+        # --- NVMe ---
+        random_page_cost: "1.1"
+        effective_io_concurrency: "200"
+
+        # --- CONNECTIONS ---
+        max_connections: "2500"
+
+    poolers:
+      - name: pooler-rw
+        instances: 1
+        type: pgbouncer
+        pgbouncer:
+          poolMode: transaction
+
+    resources:
+      limits:
+        cpu: 6
+        memory: "24Gi"
+
+  backups:
+    enabled: true
+    destinationPath: "gs://saas-qa-samvaad-pg-backup/backups"
+    provider: "google"
+    google:
+      path: "/"
+      bucket: "saas-qa-samvaad-pg-backup"
+      gkeEnvironment: true
+    wal:
+      compression: gzip
+      #encryption: AES256
+      maxParallel: 1
+    data:
+      compression: gzip
+      #encryption: AES256
+      jobs: 2
+    scheduledBackups:
+      - name: daily-backup
+        schedule: "0 0 * * * *"
+        backupOwnerReference: self
+        method: barmanObjectStore

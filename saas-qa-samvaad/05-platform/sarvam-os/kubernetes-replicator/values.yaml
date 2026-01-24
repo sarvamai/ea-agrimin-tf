@@ -1,0 +1,24 @@
+resources:
+  requests:
+    cpu: 10m
+    memory: 32Mi
+  limits:
+    cpu: 100m
+    memory: 128Mi
+
+serviceAccount:
+  create: true
+
+rbac:
+  create: true
+
+namespace: kube-system
+
+nodeSelector:
+  role: "operator"
+
+tolerations:
+  - key: "role"
+    operator: "Equal"
+    value: "operator"
+    effect: "NoSchedule"

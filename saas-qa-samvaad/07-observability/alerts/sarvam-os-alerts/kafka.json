@@ -1,0 +1,304 @@
+[
+  {
+    "name": "Kafka Under-Replicated Partitions",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/Kafka_Strimzi_Alerting_Runbook.md#kafka-001-under-replicated-partitions",
+    "expression": "sum(kafka_topic_partition_under_replicated_partition) by (topic)",
+    "threshold": 0,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Topic:* {{ .Labels.topic }}\n\nCRITICAL: {{ printf \"%.0f\" .Value }} partition(s) are under-replicated. A broker may be down or replication is failing.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Topic:* {{ .Labels.topic }}\n\nAll partitions are fully replicated.{{ end }}"
+    },
+    "for": "1m"
+  },
+  {
+    "name": "Kafka Partitions Below Min ISR",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/Kafka_Strimzi_Alerting_Runbook.md#kafka-002-partitions-below-minimum-isr",
+    "expression": "sum(kafka_cluster_partition_underminisr) by (topic)",
+    "threshold": 0,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Topic:* {{ .Labels.topic }}\n\nCRITICAL: {{ printf \"%.0f\" .Value }} partition(s) below min.insync.replicas. Data durability at risk! Producers with acks=all may fail.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Topic:* {{ .Labels.topic }}\n\nAll partitions meet min ISR requirements.{{ end }}"
+    },
+    "for": "30s"
+  },
+  {
+    "name": "Kafka Consumer Lag Critical",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/Kafka_Strimzi_Alerting_Runbook.md#kafka-003-high-consumer-lag-critical",
+    "expression": "max(kafka_consumergroup_lag) by (consumergroup, topic, partition)",
+    "threshold": 10000,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Consumer Group:* {{ .Labels.consumergroup }}\n*Topic:* {{ .Labels.topic }}\n*Partition:* {{ .Labels.partition }}\n\nCRITICAL: Consumer lag is {{ printf \"%.0f\" .Value }} messages (> 10000). Consumers significantly behind producers.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Consumer Group:* {{ .Labels.consumergroup }}\n*Topic:* {{ .Labels.topic }}\n\nConsumer lag recovered to {{ printf \"%.0f\" .Value }} messages.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Kafka Offline Replicas",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/Kafka_Strimzi_Alerting_Runbook.md#kafka-004-offline-replicas",
+    "expression": "sum(kafka_server_replicamanager_offlinereplicacount)",
+    "threshold": 0,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}CRITICAL: {{ printf \"%.0f\" .Value }} replica(s) are offline. Broker failure or network partition detected.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}All replicas are back online.{{ end }}"
+    },
+    "for": "1m"
+  },
+  {
+    "name": "Kafka High ISR Shrink Rate",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/Kafka_Strimzi_Alerting_Runbook.md#kafka-005-high-isr-shrink-rate",
+    "expression": "sum(rate(kafka_server_replicamanager_isrshrinks_total[5m]))",
+    "threshold": 10,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}CRITICAL: ISR shrinking at {{ printf \"%.1f\" .Value }}/5m (> 10). Broker instability or network issues detected.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}ISR shrink rate normalized to {{ printf \"%.1f\" .Value }}/5m.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Kafka Failed Produce Requests",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/Kafka_Strimzi_Alerting_Runbook.md#kafka-006-failed-produce-requests",
+    "expression": "sum(rate(kafka_server_brokertopicmetrics_failedproducerequests_total[5m]))",
+    "threshold": 10,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}CRITICAL: Failed produce requests at {{ printf \"%.1f\" .Value }}/s (> 10/s). Check broker health and ISR status.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}Failed produce requests normalized to {{ printf \"%.1f\" .Value }}/s.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Kafka Controller Not Active",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/Kafka_Strimzi_Alerting_Runbook.md#kafka-007-controller-not-active",
+    "expression": "sum(kafka_controller_kafkacontroller_activecontrollercount)",
+    "threshold": 1,
+    "exec_err_state": "KeepLast",
+    "condition": "lt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}CRITICAL: Kafka controller is NOT active (count: {{ printf \"%.0f\" .Value }}). Cluster metadata operations are BLOCKED!{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}Kafka controller is active (count: {{ printf \"%.0f\" .Value }}).{{ end }}"
+    },
+    "for": "30s"
+  },
+  {
+    "name": "Kafka Multiple Controllers",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/Kafka_Strimzi_Alerting_Runbook.md#kafka-007-controller-not-active",
+    "expression": "sum(kafka_controller_kafkacontroller_activecontrollercount)",
+    "threshold": 1,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}CRITICAL: Multiple Kafka controllers detected (count: {{ printf \"%.0f\" .Value }}). Split-brain scenario possible!{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}Single Kafka controller active (count: {{ printf \"%.0f\" .Value }}).{{ end }}"
+    },
+    "for": "30s"
+  },
+  {
+    "name": "Kafka Consumer Lag Warning",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/Kafka_Strimzi_Alerting_Runbook.md#kafka-008-high-consumer-lag-warning",
+    "expression": "max(kafka_consumergroup_lag) by (consumergroup, topic, partition)",
+    "threshold": 1000,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Consumer Group:* {{ .Labels.consumergroup }}\n*Topic:* {{ .Labels.topic }}\n*Partition:* {{ .Labels.partition }}\n\nWARNING: Consumer lag is {{ printf \"%.0f\" .Value }} messages (> 1000).{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Consumer Group:* {{ .Labels.consumergroup }}\n*Topic:* {{ .Labels.topic }}\n\nConsumer lag recovered to {{ printf \"%.0f\" .Value }} messages.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Kafka High Produce Latency P99",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/Kafka_Strimzi_Alerting_Runbook.md#kafka-009-high-request-latency-p99",
+    "expression": "avg(kafka_network_requestmetrics_totaltimems{request=\"Produce\", quantile=\"0.99\"})",
+    "threshold": 1000,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}WARNING: Produce request P99 latency is {{ printf \"%.0f\" .Value }}ms (> 1000ms). Performance degradation detected.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}Produce latency normalized to {{ printf \"%.0f\" .Value }}ms.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Kafka High Request Queue Size",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/Kafka_Strimzi_Alerting_Runbook.md#kafka-010-high-request-queue-size",
+    "expression": "sum(kafka_network_requestchannel_responsequeuesize)",
+    "threshold": 1000,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}WARNING: Request queue size is {{ printf \"%.0f\" .Value }} (> 1000). Brokers unable to process requests fast enough.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}Request queue size normalized to {{ printf \"%.0f\" .Value }}.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Kafka Consumer Lag Growth Rate",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/Kafka_Strimzi_Alerting_Runbook.md#kafka-011-consumer-lag-growth-rate",
+    "expression": "increase(kafka_consumergroup_lag[5m])",
+    "threshold": 500,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Consumer Group:* {{ .Labels.consumergroup }}\n*Topic:* {{ .Labels.topic }}\n\nWARNING: Consumer lag growing by {{ printf \"%.0f\" .Value }} messages/5m. Consumers falling behind.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Consumer Group:* {{ .Labels.consumergroup }}\n*Topic:* {{ .Labels.topic }}\n\nConsumer lag growth stabilized.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Kafka High Fetch Latency P99",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/Kafka_Strimzi_Alerting_Runbook.md#kafka-012-high-fetch-request-latency",
+    "expression": "avg(kafka_network_requestmetrics_totaltimems{request=\"FetchConsumer\", quantile=\"0.99\"})",
+    "threshold": 500,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}WARNING: Fetch request P99 latency is {{ printf \"%.0f\" .Value }}ms (> 500ms). Consumer throughput impacted.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}Fetch latency normalized to {{ printf \"%.0f\" .Value }}ms.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Kafka Low Broker Count",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/Kafka_Strimzi_Alerting_Runbook.md#kafka-013-low-broker-count",
+    "expression": "sum(kafka_controller_kafkacontroller_activebrokercount)",
+    "threshold": 3,
+    "exec_err_state": "KeepLast",
+    "condition": "lt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}WARNING: Only {{ printf \"%.0f\" .Value }} active broker(s) (< 3). Cluster capacity and fault tolerance reduced.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}Broker count recovered to {{ printf \"%.0f\" .Value }}.{{ end }}"
+    },
+    "for": "2m"
+  },
+  {
+    "name": "Kafka High Message Rate",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/Kafka_Strimzi_Alerting_Runbook.md#kafka-014-high-message-rate",
+    "expression": "sum(rate(kafka_server_brokertopicmetrics_messagesin_total[5m]))",
+    "threshold": 100000,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}WARNING: Message rate is {{ printf \"%.0f\" .Value }} msg/s (> 100000/s). Approaching cluster capacity.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}Message rate normalized to {{ printf \"%.0f\" .Value }} msg/s.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Kafka Failed Fetch Requests",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/Kafka_Strimzi_Alerting_Runbook.md#kafka-006-failed-produce-requests",
+    "expression": "sum(rate(kafka_server_brokertopicmetrics_failedfetchrequests_total[5m]))",
+    "threshold": 10,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}WARNING: Failed fetch requests at {{ printf \"%.1f\" .Value }}/s (> 10/s). Check broker health.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}Failed fetch requests normalized to {{ printf \"%.1f\" .Value }}/s.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Kafka Broker Disk Usage High",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/Kafka_Strimzi_Alerting_Runbook.md",
+    "expression": "100 * (kubelet_volume_stats_used_bytes{namespace=~\".*kafka.*\"} / kubelet_volume_stats_capacity_bytes{namespace=~\".*kafka.*\"})",
+    "threshold": 80,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*PVC:* {{ .Labels.persistentvolumeclaim }}\n\nWARNING: Kafka disk usage at {{ printf \"%.1f\" .Value }}% (> 80%). Expand storage or increase retention cleanup.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*PVC:* {{ .Labels.persistentvolumeclaim }}\n\nDisk usage recovered to {{ printf \"%.1f\" .Value }}%.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Kafka Consumer Group Rebalancing",
+    "is_paused": false,
+    "severity": "info",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/Kafka_Strimzi_Alerting_Runbook.md#kafka-015-consumer-group-rebalancing",
+    "expression": "changes(kafka_consumergroup_members[5m])",
+    "threshold": 5,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Consumer Group:* {{ .Labels.consumergroup }}\n\nINFO: Consumer group rebalanced {{ printf \"%.0f\" .Value }} times in 5m (> 5). Check for unstable consumers.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Consumer Group:* {{ .Labels.consumergroup }}\n\nConsumer group rebalance frequency normalized.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Kafka High JVM GC Time",
+    "is_paused": false,
+    "severity": "info",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/Kafka_Strimzi_Alerting_Runbook.md#kafka-016-high-jvm-gc-time",
+    "expression": "sum(rate(jvm_gc_collection_seconds_sum{service_name=~\".*kafka.*\"}[5m])) by (pod)",
+    "threshold": 1,
+    "exec_err_state": "KeepLast",
+    "no_data_state": "Ok",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Pod:* {{ .Labels.pod }}\n\nINFO: JVM GC time is {{ printf \"%.2f\" .Value }}s/5m (> 1s). Review JVM heap settings.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Pod:* {{ .Labels.pod }}\n\nJVM GC time normalized to {{ printf \"%.2f\" .Value }}s/5m.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Kafka Network Bytes In High",
+    "is_paused": false,
+    "severity": "info",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/Kafka_Strimzi_Alerting_Runbook.md",
+    "expression": "sum(rate(kafka_server_brokertopicmetrics_bytesin_total[5m])) / (1024 * 1024)",
+    "threshold": 100,
+    "exec_err_state": "KeepLast",
+    "no_data_state": "Ok",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}INFO: Kafka ingress rate is {{ printf \"%.1f\" .Value }} MB/s (> 100 MB/s). Monitor cluster capacity.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}Kafka ingress rate normalized to {{ printf \"%.1f\" .Value }} MB/s.{{ end }}"
+    },
+    "for": "5m"
+  }
+]

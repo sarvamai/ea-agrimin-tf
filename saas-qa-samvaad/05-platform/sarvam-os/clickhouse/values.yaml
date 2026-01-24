@@ -1,0 +1,119 @@
+namespace: clickhouse-samvaad
+
+clickhouse:
+  clusterName: samvaad-clickhouse-cluster
+  image: "clickhouse/clickhouse-server:25.4"
+  resources:
+    requests:
+      memory: "22Gi"
+      cpu: "9"
+    limits:
+      memory: "24Gi"
+      cpu: "11"
+  shardCount: 1
+  replicaCount: 2
+  backup:
+    enabled: true
+    secret: "chi-samvaad-backup-secrets"
+    remoteStorage: gcs # other backup options are gcs and s3
+    incrementalHeartbeatUrl: "https://uptime.sarvam.ai/api/push/Xp0pCwXQQF?status=up&msg=OK&ping="
+    fullHeartbeatUrl: "https://uptime.sarvam.ai/api/push/XI9QR0zwgW?status=up&msg=OK&ping="
+  storage:
+    dataStorageSize: "712Gi"
+    dataStorageClass: clickhouse-retain-zrs
+    logStorageSize: "30Gi"
+    logStorageClass: clickhouse-retain-zrs
+  nodeSelector:
+    role: chisamvaad
+  affinity:
+    enabled: true
+    nodeAffinityZones:
+      - asia-south1-a
+      - asia-south1-b
+  tolerations:
+    - key: "role"
+      operator: "Equal"
+      value: "chisamvaad"
+      effect: "NoSchedule"
+
+  usersSecret: "clickhouse-samvaad-db-secrets"
+  users:
+    avi:
+      secretKey: "CLICKHOUSE_DB_AVI_SECRET"
+      profile: "readonly"
+      networks:
+        - "0.0.0.0/0"
+
+    harish:
+      secretKey: "CLICKHOUSE_DB_HARISH_SECRET"
+      profile: "readonly"
+      networks:
+        - "0.0.0.0/0"
+
+    grafana:
+      secretKey: "CLICKHOUSE_DB_GRAFANA_SECRET"
+      profile: "readonly"
+      networks:
+        - "0.0.0.0/0"
+
+    sarvam-app-analytics-svc:
+      secretKey: "CLICKHOUSE_DB_ANALYTICS_SVC_SECRET"
+      profile: "readwrite"
+      networks:
+        - "0.0.0.0/0"
+      allowDatabases:
+        - sarvam-app-analytics-db
+
+    sarvam-metabase:
+      secretKey: "CLICKHOUSE_DB_METABASE_SECRET"
+      profile: "readonly2"
+      networks:
+        - "0.0.0.0/0"
+      allowDatabases:
+        - sarvam-app-analytics-db
+        - subscription_service_db
+
+clickhouse-ingress:
+  ingress:
+    enabled: true
+    platform: sarvam-os
+    name: clickhouse-ingress
+    serviceName: clickhouse-service
+    class: kong
+    clusterIssuer: letsencrypt-prod
+    host: clickhouse.saas-qa-samvaad.sarvam.ai
+    tlsSecret: clickhouse-tls
+    servicePort: 80
+
+    routes:
+    - path: /
+      port: 80
+
+keeper:
+  image: "clickhouse/clickhouse-keeper:25.11"
+  replicaCount: 3
+  resources:
+    requests:
+      memory: "2.2Gi"
+      cpu: "1"
+    limits:
+      memory: "3Gi"
+      cpu: "2"
+  storage:
+    size: 10Gi
+    className: clickhouse-retain-zrs
+  affinity:
+    enabled: true
+    nodeAffinityZones:
+      - asia-south1-a
+      - asia-south1-b
+      - asia-south1-c
+  tolerations:
+    - key: "role"
+      operator: "Equal"
+      value: "chisamvaad"
+      effect: "NoSchedule"
+    - key: "role"
+      operator: "Equal"
+      value: "chksamvaad"
+      effect: "NoSchedule"

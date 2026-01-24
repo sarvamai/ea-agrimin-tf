@@ -1,0 +1,135 @@
+global:
+  domain: ""
+  nodeSelector:
+    role: platform
+
+# remove this if dont want to enbale google rbac
+dex:
+  envFrom:
+    - secretRef:
+        name: argocd-sso-secret
+
+  volumes:
+    - name: google-json
+      secret:
+        defaultMode: 420
+        secretName: argocd-google-groups-json
+
+  volumeMounts:
+    - name: google-json
+      mountPath: /tmp/oidc
+      readOnly: true
+# remove this if dont want to enbale google rbac
+configs:
+  rbac:
+    create: true
+    policy.csv: |
+      # POLICY DEFINITIONS for custom roles
+      p, role:arya-developer, projects, get, saas-prod-arya, allow
+      p, role:arya-developer, applications, *, saas-prod-arya/*, allow
+      p, role:arya-developer, applicationsets, *, saas-prod-arya/*, allow
+      p, role:arya-developer, repositories, get, *, allow
+
+      p, role:developer, projects, get, *, allow
+      p, role:developer, applications, get, */*, allow
+      p, role:developer, applications, sync, */*, allow
+      p, role:developer, applicationsets, get, */*, allow
+
+      # GROUP BINDINGS
+      g, org-gitops-admin@sarvam.ai, role:admin
+      g, saas-prod-support-arya-dev@sarvam.ai, role:arya-developer
+      g, org-gitops-dev@sarvam.ai, role:developer
+
+    # You can also manage the default policy and other keys here
+    policy.default: role:readonly
+  cm:
+    url: https://argocd.platform.sarvam.ai
+
+    dex.config: |
+      connectors:
+        - config:
+            clientID: 329150791327-pfau0p52tpn6641eqb4bv742urfs3u67.apps.googleusercontent.com
+            clientSecret: $GOOGLE_CLIENT_SECRET
+            issuer: https://accounts.google.com
+            serviceAccountFilePath: /tmp/oidc/googleAuth.json
+            fetchTransitiveGroupMembership: True
+            adminEmail: sarvam@sarvam.ai
+          type: google
+          id: google
+          name: Google
+
+  params:
+    # How many apps to check at once (Default is 20)
+    controller.status.processors: "50" 
+    # How many sync operations to run at once (Default is 10)
+    controller.operation.processors: "25"
+
+
+redis-ha:
+  enabled: true
+  nodeSelector:
+    role: platform
+  # Redis HA pods must be on different nodes
+  hardAntiAffinity: true
+
+controller:
+  replicas: 3
+  dynamicClusterDistribution: true
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: "topology.kubernetes.io/zone"
+      whenUnsatisfiable: DoNotSchedule # Force split between Zone 1 and 3
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/name: argocd-application-controller
+    - maxSkew: 1
+      topologyKey: "kubernetes.io/hostname"
+      whenUnsatisfiable: ScheduleAnyway # Spread across nodes as much as possible
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/name: argocd-application-controller
+
+repoServer:
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 20
+  
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: "topology.kubernetes.io/zone"
+      whenUnsatisfiable: DoNotSchedule
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/name: argocd-repo-server
+    - maxSkew: 1
+      topologyKey: "kubernetes.io/hostname"
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/name: argocd-repo-server
+
+applicationSet:
+  replicas: 3
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: "kubernetes.io/hostname"
+      whenUnsatisfiable: DoNotSchedule
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/name: argocd-applicationset-controller
+
+server:
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 20
+  service:
+    type: ClusterIP
+
+# keep this 
+configs:
+  cm:
+    url: https://argocd.aws-qa01.sarvam.ai
+  params:
+    server.insecure: true

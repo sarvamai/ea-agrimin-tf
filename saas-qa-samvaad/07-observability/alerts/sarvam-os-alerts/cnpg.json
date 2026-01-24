@@ -1,0 +1,410 @@
+[
+  {
+    "name": "CNPG Collector Down",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/CloudNativePG_Alerting_Runbook.md#cnpg-001-collector-down",
+    "expression": "cnpg_collector_up",
+    "threshold": 1,
+    "exec_err_state": "KeepLast",
+    "condition": "lt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Cluster:* {{ .Labels.cluster }}\n*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nCNPG metrics collector is DOWN. Monitoring gap detected.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Cluster:* {{ .Labels.cluster }}\n*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nCNPG metrics collector is back UP.{{ end }}"
+    },
+    "for": "2m"
+  },
+  {
+    "name": "CNPG Pod Not Running",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/CloudNativePG_Alerting_Runbook.md#cnpg-002-pod-not-running",
+    "expression": "kube_pod_status_phase{phase=~\"Pending|Failed|Unknown\"} * on (pod, namespace) group_left() (kube_pod_labels{label_cnpg_io_cluster!=\"\"})",
+    "threshold": 0,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n*Phase:* {{ .Labels.phase }}\n\nCRITICAL: PostgreSQL pod is NOT running. Status: {{ .Labels.phase }}. Check pod events and logs.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nPostgreSQL pod is now running.{{ end }}"
+    },
+    "for": "1m"
+  },
+  {
+    "name": "CNPG Replication Health Down",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/CloudNativePG_Alerting_Runbook.md#cnpg-003-replication-health-down",
+    "expression": "(1 - max by (pod, namespace) (cnpg_pg_replication_in_recovery) + max by (pod, namespace) (cnpg_pg_replication_is_wal_receiver_up))",
+    "threshold": 0.9,
+    "exec_err_state": "KeepLast",
+    "condition": "lt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nCRITICAL: Replication health degraded (score: {{ printf \"%.2f\" .Value }} < 0.9). WAL receiver may be down or replica lost connection to primary.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nReplication health recovered (score: {{ printf \"%.2f\" .Value }}).{{ end }}"
+    },
+    "for": "2m"
+  },
+  {
+    "name": "CNPG Replication Lag Critical",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/CloudNativePG_Alerting_Runbook.md#cnpg-004-high-replication-lag-critical",
+    "expression": "max(cnpg_pg_replication_lag) by (pod, namespace, cluster)",
+    "threshold": 300,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Cluster:* {{ .Labels.cluster }}\n*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nCRITICAL: Replication lag is {{ printf \"%.0f\" .Value }}s (> 300s threshold). Replica significantly behind primary.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Cluster:* {{ .Labels.cluster }}\n*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nReplication lag recovered to {{ printf \"%.0f\" .Value }}s.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "CNPG XID Age Critical",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/CloudNativePG_Alerting_Runbook.md#cnpg-005-transaction-id-age-critical",
+    "expression": "max by (pod, namespace, datname) (cnpg_pg_database_xid_age)",
+    "threshold": 1500000000,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n*Database:* {{ .Labels.datname }}\n\nCRITICAL: Transaction ID age is {{ printf \"%.0f\" .Value }} (> 1.5B). URGENT: Risk of database freeze! Run VACUUM FREEZE immediately.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n*Database:* {{ .Labels.datname }}\n\nXID age recovered to {{ printf \"%.0f\" .Value }}.{{ end }}"
+    },
+    "for": "1m"
+  },
+  {
+    "name": "CNPG Connections Exhausted",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/CloudNativePG_Alerting_Runbook.md#cnpg-006-connection-exhaustion",
+    "expression": "100 * (sum by (pod, namespace) (cnpg_backends_total) / max by (pod, namespace) (cnpg_pg_settings_setting{setting=\"max_connections\"}))",
+    "threshold": 95,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nCRITICAL: PostgreSQL connections at {{ printf \"%.1f\" .Value }}% of max_connections (> 95%). New connections may fail.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nConnection usage recovered to {{ printf \"%.1f\" .Value }}%.{{ end }}"
+    },
+    "for": "2m"
+  },
+  {
+    "name": "CNPG Deadlocks Detected",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/CloudNativePG_Alerting_Runbook.md#cnpg-007-deadlocks-detected",
+    "expression": "increase(cnpg_pg_stat_database_deadlocks[5m])",
+    "threshold": 0,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n*Database:* {{ .Labels.datname }}\n\nCRITICAL: {{ printf \"%.0f\" .Value }} deadlock(s) detected in last 5 minutes. Review application lock ordering.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n*Database:* {{ .Labels.datname }}\n\nNo deadlocks detected.{{ end }}"
+    },
+    "for": "1m"
+  },
+  {
+    "name": "CNPG WAL Archive Failure",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/CloudNativePG_Alerting_Runbook.md#cnpg-008-wal-archive-failure",
+    "expression": "increase(cnpg_pg_stat_archiver_failed_count[5m])",
+    "threshold": 0,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nCRITICAL: {{ printf \"%.0f\" .Value }} WAL archive failure(s) in last 5 minutes. Backup and PITR capability at risk.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nWAL archiving recovered.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "CNPG No Recent Backup",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/CloudNativePG_Alerting_Runbook.md#cnpg-009-no-recent-backup",
+    "expression": "(time() - cnpg_collector_last_available_backup_timestamp) / 3600",
+    "threshold": 24,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Cluster:* {{ .Labels.cluster }}\n*Namespace:* {{ .Labels.namespace }}\n\nCRITICAL: No successful backup in {{ printf \"%.1f\" .Value }} hours (> 24h threshold). Check backup jobs.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Cluster:* {{ .Labels.cluster }}\n*Namespace:* {{ .Labels.namespace }}\n\nBackup completed. Last backup {{ printf \"%.1f\" .Value }} hours ago.{{ end }}"
+    },
+    "for": "1m"
+  },
+  {
+    "name": "CNPG Replication Lag Warning",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/CloudNativePG_Alerting_Runbook.md#cnpg-010-high-replication-lag-warning",
+    "expression": "max(cnpg_pg_replication_lag) by (pod, namespace, cluster)",
+    "threshold": 30,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Cluster:* {{ .Labels.cluster }}\n*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: Replication lag is {{ printf \"%.0f\" .Value }}s (> 30s threshold).{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Cluster:* {{ .Labels.cluster }}\n*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nReplication lag recovered to {{ printf \"%.0f\" .Value }}s.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "CNPG Write Lag Warning",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/CloudNativePG_Alerting_Runbook.md#cnpg-011-high-write-lag",
+    "expression": "max by (pod, namespace) (cnpg_pg_stat_replication_write_lag_seconds)",
+    "threshold": 10,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: Replication write lag is {{ printf \"%.1f\" .Value }}s (> 10s). Check network bandwidth.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nWrite lag recovered to {{ printf \"%.1f\" .Value }}s.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "CNPG Flush Lag Warning",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/CloudNativePG_Alerting_Runbook.md#cnpg-012-high-flush-lag",
+    "expression": "max by (pod, namespace) (cnpg_pg_stat_replication_flush_lag_seconds)",
+    "threshold": 10,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: Replication flush lag is {{ printf \"%.1f\" .Value }}s (> 10s). Check replica disk I/O.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nFlush lag recovered to {{ printf \"%.1f\" .Value }}s.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "CNPG Replay Lag Warning",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/CloudNativePG_Alerting_Runbook.md#cnpg-013-high-replay-lag",
+    "expression": "max by (pod, namespace) (cnpg_pg_stat_replication_replay_lag_seconds)",
+    "threshold": 10,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: Replication replay lag is {{ printf \"%.1f\" .Value }}s (> 10s). Check replica CPU.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nReplay lag recovered to {{ printf \"%.1f\" .Value }}s.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "CNPG XID Age Warning",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/CloudNativePG_Alerting_Runbook.md#cnpg-014-transaction-id-age-warning",
+    "expression": "max by (pod, namespace, datname) (cnpg_pg_database_xid_age)",
+    "threshold": 1000000000,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n*Database:* {{ .Labels.datname }}\n\nWARNING: Transaction ID age is {{ printf \"%.0f\" .Value }} (> 1B). Check autovacuum status.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n*Database:* {{ .Labels.datname }}\n\nXID age recovered to {{ printf \"%.0f\" .Value }}.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "CNPG High Connections Warning",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/CloudNativePG_Alerting_Runbook.md#cnpg-015-high-connection-usage",
+    "expression": "100 * (sum by (pod, namespace) (cnpg_backends_total) / max by (pod, namespace) (cnpg_pg_settings_setting{setting=\"max_connections\"}))",
+    "threshold": 80,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: PostgreSQL connections at {{ printf \"%.1f\" .Value }}% of max_connections (> 80%).{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nConnection usage recovered to {{ printf \"%.1f\" .Value }}%.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "CNPG Long Running Transactions",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/CloudNativePG_Alerting_Runbook.md#cnpg-016-long-running-transactions",
+    "expression": "max by (pod, namespace) (cnpg_backends_max_tx_duration_seconds)",
+    "threshold": 300,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: Long-running transaction detected ({{ printf \"%.0f\" .Value }}s > 300s). May block vacuum and other operations.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nLong-running transaction completed.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "CNPG Blocked Queries",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/CloudNativePG_Alerting_Runbook.md#cnpg-017-blocked-queries",
+    "expression": "sum by (pod, namespace) (cnpg_backends_waiting_total)",
+    "threshold": 5,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: {{ printf \"%.0f\" .Value }} queries blocked waiting for locks (> 5). Check for lock contention.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nBlocked queries resolved. Now {{ printf \"%.0f\" .Value }} waiting.{{ end }}"
+    },
+    "for": "2m"
+  },
+  {
+    "name": "CNPG High Rollback Rate",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/CloudNativePG_Alerting_Runbook.md#cnpg-018-high-transaction-rollback-rate",
+    "expression": "rate(cnpg_pg_stat_database_xact_rollback[5m])",
+    "threshold": 10,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n*Database:* {{ .Labels.datname }}\n\nWARNING: High rollback rate {{ printf \"%.2f\" .Value }}/s (> 10/s). Check application errors.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n*Database:* {{ .Labels.datname }}\n\nRollback rate normalized to {{ printf \"%.2f\" .Value }}/s.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "CNPG WAL Archive Delay",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/CloudNativePG_Alerting_Runbook.md#cnpg-019-wal-archive-delay",
+    "expression": "max by (pod, namespace) (cnpg_pg_stat_archiver_seconds_since_last_archival)",
+    "threshold": 300,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: No WAL archived for {{ printf \"%.0f\" .Value }}s (> 300s). RPO at risk.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nWAL archiving resumed. Last archive {{ printf \"%.0f\" .Value }}s ago.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "CNPG High CPU Usage",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/CloudNativePG_Alerting_Runbook.md#cnpg-020-high-cpu-utilization",
+    "expression": "100 * (sum by (pod, namespace) (rate(container_cpu_usage_seconds_total{container!=\"\"}[5m])) / sum by (pod, namespace) (kube_pod_container_resource_requests{resource=\"cpu\"}))",
+    "threshold": 80,
+    "exec_err_state": "KeepLast",
+    "no_data_state": "Ok",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: CPU usage at {{ printf \"%.1f\" .Value }}% of requests (> 80%). Consider scaling or query optimization.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nCPU usage recovered to {{ printf \"%.1f\" .Value }}%.{{ end }}"
+    },
+    "for": "10m"
+  },
+  {
+    "name": "CNPG High Memory Usage",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/CloudNativePG_Alerting_Runbook.md#cnpg-021-high-memory-utilization",
+    "expression": "100 * (sum by (pod, namespace) (container_memory_working_set_bytes{container!=\"\"}) / sum by (pod, namespace) (kube_pod_container_resource_requests{resource=\"memory\"}))",
+    "threshold": 90,
+    "exec_err_state": "KeepLast",
+    "no_data_state": "Ok",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: Memory usage at {{ printf \"%.1f\" .Value }}% of requests (> 90%). OOM risk.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nMemory usage recovered to {{ printf \"%.1f\" .Value }}%.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "CNPG High Temp File Usage",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/CloudNativePG_Alerting_Runbook.md#cnpg-022-high-temp-file-usage",
+    "expression": "rate(cnpg_pg_stat_database_temp_bytes[5m]) / (1024 * 1024)",
+    "threshold": 100,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n*Database:* {{ .Labels.datname }}\n\nWARNING: High temp file usage {{ printf \"%.1f\" .Value }} MB/s (> 100 MB/s). Queries spilling to disk. Increase work_mem or add indexes.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n*Database:* {{ .Labels.datname }}\n\nTemp file usage normalized to {{ printf \"%.1f\" .Value }} MB/s.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "CNPG Low Cache Hit Ratio",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/CloudNativePG_Alerting_Runbook.md#cnpg-023-low-cache-hit-ratio",
+    "expression": "100 * (sum by (pod, namespace) (rate(cnpg_pg_stat_database_blks_hit[5m])) / (sum by (pod, namespace) (rate(cnpg_pg_stat_database_blks_hit[5m])) + sum by (pod, namespace) (rate(cnpg_pg_stat_database_blks_read[5m]))))",
+    "threshold": 95,
+    "exec_err_state": "KeepLast",
+    "condition": "lt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: Buffer cache hit ratio is {{ printf \"%.1f\" .Value }}% (< 95%). Consider increasing shared_buffers.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nCache hit ratio recovered to {{ printf \"%.1f\" .Value }}%.{{ end }}"
+    },
+    "for": "10m"
+  },
+  {
+    "name": "CNPG Low Disk Space",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/CloudNativePG_Alerting_Runbook.md#cnpg-024-low-disk-space",
+    "expression": "100 * (kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes)",
+    "threshold": 85,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*PVC:* {{ .Labels.persistentvolumeclaim }}\n\nWARNING: Disk usage at {{ printf \"%.1f\" .Value }}% (> 85%). Expand volume or clean up data.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*PVC:* {{ .Labels.persistentvolumeclaim }}\n\nDisk usage recovered to {{ printf \"%.1f\" .Value }}%.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "CNPG High Inode Usage",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/CloudNativePG_Alerting_Runbook.md#cnpg-025-high-inode-usage",
+    "expression": "100 * (kubelet_volume_stats_inodes_used / kubelet_volume_stats_inodes)",
+    "threshold": 90,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*PVC:* {{ .Labels.persistentvolumeclaim }}\n\nWARNING: Inode usage at {{ printf \"%.1f\" .Value }}% (> 90%). Many small files detected.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*PVC:* {{ .Labels.persistentvolumeclaim }}\n\nInode usage recovered to {{ printf \"%.1f\" .Value }}%.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "CNPG Collector Duration High",
+    "is_paused": false,
+    "severity": "info",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/CloudNativePG_Alerting_Runbook.md#cnpg-026-collector-collection-duration-high",
+    "expression": "max by (pod, namespace) (cnpg_collector_collection_duration_seconds)",
+    "threshold": 30,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nINFO: Metrics collection taking {{ printf \"%.1f\" .Value }}s (> 30s). Review collector resources.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nCollector duration normalized to {{ printf \"%.1f\" .Value }}s.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "CNPG Database Size Growing Fast",
+    "is_paused": false,
+    "severity": "info",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/CloudNativePG_Alerting_Runbook.md",
+    "expression": "predict_linear(cnpg_pg_database_size_bytes[1h], 24 * 3600) / (1024 * 1024 * 1024)",
+    "threshold": 100,
+    "exec_err_state": "KeepLast",
+    "no_data_state": "Ok",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n*Database:* {{ .Labels.datname }}\n\nINFO: Database predicted to grow by {{ printf \"%.1f\" .Value }} GB in next 24h. Review data retention.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n*Database:* {{ .Labels.datname }}\n\nDatabase growth rate normalized.{{ end }}"
+    },
+    "for": "30m"
+  }
+]

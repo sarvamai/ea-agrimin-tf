@@ -1,0 +1,145 @@
+# ------------------------------------------------
+# GLOBAL CONFIGURATION
+# ------------------------------------------------
+image:
+  registry: docker.io
+  repository: bitnamilegacy/redis
+  tag: 8.2.1
+  pullPolicy: IfNotPresent
+
+auth:
+  enabled: true
+  existingSecret: "redis-password-secret"
+  existingSecretPasswordKey: "redis-password"
+
+architecture: replication
+
+sentinel:
+  enabled: false
+
+# ------------------------------------------------
+# MASTER CONFIGURATION
+# ------------------------------------------------
+master:
+  count: 1
+  resources:
+    requests:
+      memory: 10Gi
+      cpu: 1500m
+    limits:
+      memory: 15Gi
+      cpu: 2500m
+
+  tolerations:
+    - key: "role"
+      operator: "Equal"
+      value: "redis"
+      effect: "NoSchedule"
+
+  nodeSelector:
+    role: redis
+
+  podAntiAffinityPreset: hard
+
+  configuration: |
+    bind 0.0.0.0
+    port 6379
+    protected-mode no
+    databases 16
+    
+    # --- 5GB Capacity ---
+    maxmemory 5gb
+    maxmemory-policy volatile-lru
+    
+    # --- Threading (Optimized for 2 vCPU) ---
+    io-threads 1
+    io-threads-do-reads yes
+    
+    maxclients 30000
+    tcp-backlog 65536
+    tcp-keepalive 300
+    save 900 1
+    save 300 10
+    save 60 10000
+
+  persistence:
+    enabled: true
+    size: 40Gi
+    storageClass: "redis-ssd-regional"
+
+# ------------------------------------------------
+# REPLICA CONFIGURATION
+# ------------------------------------------------
+replica:
+  replicaCount: 1
+  resources:
+    requests:
+      memory: 10Gi
+      cpu: 1500m
+    limits:
+      memory: 15Gi
+      cpu: 2500m
+
+  tolerations:
+    - key: "role"
+      operator: "Equal"
+      value: "redis"
+      effect: "NoSchedule"
+
+  nodeSelector:
+    role: redis
+
+  podAntiAffinityPreset: hard
+
+  configuration: |
+    bind 0.0.0.0
+    port 6379
+    protected-mode no
+    databases 16
+    maxmemory 5gb
+    maxmemory-policy volatile-lru
+    io-threads 1
+    io-threads-do-reads yes
+    maxclients 30000
+    tcp-backlog 65536
+    tcp-keepalive 300
+    save 900 1
+    save 300 10
+    save 60 10000
+
+  persistence:
+    enabled: true
+    size: 40Gi
+    storageClass: "redis-ssd-regional"
+
+# ------------------------------------------------
+# SYSTEM OPTIMIZATIONS
+# ------------------------------------------------
+sysctl:
+  enabled: true
+  image:
+    repository: bitnamilegacy/os-shell
+  mountHostSys: true
+  command:
+    - /bin/sh
+    - -c
+    - |
+      sysctl -w net.core.somaxconn=65535
+      sysctl -w vm.overcommit_memory=1
+      echo never > /sys/kernel/mm/transparent_hugepage/enabled
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 50m
+      memory: 64Mi
+
+metrics:
+  enabled: true
+  image:
+    repository: bitnamilegacy/redis-exporter
+
+kubectl:
+  image:
+    repository: bitnamilegacy/kubectl

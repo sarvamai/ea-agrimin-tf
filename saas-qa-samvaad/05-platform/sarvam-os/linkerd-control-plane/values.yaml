@@ -1,0 +1,29 @@
+enablePodAntiAffinity: true
+
+nodeSelector:
+  role: "operator"
+
+tolerations:
+  - key: "role"
+    operator: "Equal"
+    value: "operator"
+    effect: "NoSchedule"
+
+affinity:
+  enablePodAntiAffinity: true
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: role
+          operator: In
+          values:
+          - "operator"
+
+identity:
+  externalCA: true
+  issuer:
+    scheme: kubernetes.io/tls
+    tls:
+      crtPEM: "dummy" 
+      keyPEM: "dummy"
