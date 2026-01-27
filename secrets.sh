@@ -10,3 +10,4 @@ az network dns record-set a add-record \
   --zone-name sarvam.ai \
   --record-set-name clickhouse.agrimin \
   --ipv4-address 34.180.49.65
+  

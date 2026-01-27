@@ -162,3 +162,36 @@ prometheusOperator:
       operator: "Equal"
       value: "monitoring"
       effect: "NoSchedule"
+
+# -----------------------------------------------------------------------------
+# KUBELET SERVICEMONITOR (for container_* metrics from cAdvisor)
+# -----------------------------------------------------------------------------
+kubelet:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+    cAdvisor: true
+    probes: true
+
+# -----------------------------------------------------------------------------
+# NODE EXPORTER (for node_* metrics)
+# -----------------------------------------------------------------------------
+prometheus-node-exporter:
+  enabled: true
+  prometheus:
+    monitor:
+      enabled: true
+      interval: 30s
+  tolerations:
+    - operator: "Exists"
+
+# -----------------------------------------------------------------------------
+# KUBE STATE METRICS (for kube_* metrics)
+# -----------------------------------------------------------------------------
+kube-state-metrics:
+  enabled: true
+  prometheus:
+    monitor:
+      enabled: true
+      interval: 30s

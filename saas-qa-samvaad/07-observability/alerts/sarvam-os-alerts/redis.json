@@ -169,7 +169,7 @@
     "is_paused": false,
     "severity": "warning",
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Redis_HA_Alerting_Runbook.md#redis-012-high-memory-fragmentation",
-    "expression": "redis_mem_fragmentation_ratio",
+    "expression": "redis_mem_fragmentation_ratio and (redis_memory_used_bytes > 100000000)",
     "threshold": 1.5,
     "exec_err_state": "KeepLast",
     "condition": "gt",

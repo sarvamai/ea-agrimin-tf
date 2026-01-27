@@ -263,3 +263,173 @@ resource "kubernetes_manifest" "strimzi_kafka_by_port_podmonitor" {
     }
   }
 }
+
+# resource "kubernetes_manifest" "node_exporter_sm" {
+#   manifest = {
+#     apiVersion = "monitoring.coreos.com/v1"
+#     kind       = "ServiceMonitor"
+
+#     metadata = {
+#       name      = "node-exporter"
+#       namespace = "monitoring"
+#       labels = {
+#         release                     = "prometheus"
+#         "app.kubernetes.io/name"    = "prometheus-node-exporter"
+#       }
+#     }
+
+#     spec = {
+#       jobLabel = "node-exporter"
+
+#       selector = {
+#         matchLabels = {
+#           "app.kubernetes.io/name" = "prometheus-node-exporter"
+#         }
+#       }
+
+#       namespaceSelector = {
+#         matchNames = ["monitoring", "kube-system", "prometheus"]
+#       }
+
+#       endpoints = [{
+#         port           = "http-metrics"
+#         interval       = "30s"
+#         scrapeTimeout  = "10s"
+#         path           = "/metrics"
+
+#         relabelings = [
+#           {
+#             sourceLabels = ["__meta_kubernetes_pod_node_name"]
+#             targetLabel  = "node"
+#           },
+#           {
+#             sourceLabels = ["__meta_kubernetes_endpoint_node_name"]
+#             targetLabel  = "instance"
+#           }
+#         ]
+#       }]
+#     }
+#   }
+# }
+
+# resource "kubernetes_manifest" "kube_state_metrics_sm" {
+#   manifest = {
+#     apiVersion = "monitoring.coreos.com/v1"
+#     kind       = "ServiceMonitor"
+
+#     metadata = {
+#       name      = "kube-state-metrics"
+#       namespace = "monitoring"
+#       labels = {
+#         release                  = "prometheus"
+#         "app.kubernetes.io/name" = "kube-state-metrics"
+#       }
+#     }
+
+#     spec = {
+#       jobLabel = "app.kubernetes.io/name"
+
+#       selector = {
+#         matchLabels = {
+#           "app.kubernetes.io/name" = "kube-state-metrics"
+#         }
+#       }
+
+#       namespaceSelector = {
+#         matchNames = ["monitoring", "kube-system"]
+#       }
+
+#       endpoints = [
+#         {
+#           port          = "http"
+#           path          = "/metrics"
+#           interval      = "30s"
+#           scrapeTimeout = "10s"
+#           honorLabels   = true
+#         },
+#       ]
+#     }
+#   }
+# }
+
+/* resource "kubernetes_manifest" "node_exporter_pm" {
+  manifest = {
+    apiVersion = "monitoring.coreos.com/v1"
+    kind       = "PodMonitor"
+
+    metadata = {
+      name      = "node-exporter"
+      namespace = "monitoring"
+      labels = {
+        release = "prometheus"
+      }
+    }
+
+    spec = {
+      jobLabel = "node-exporter"
+
+      namespaceSelector = {
+        matchNames = ["monitoring", "kube-system"]
+      }
+
+      selector = {
+        matchLabels = {
+          "app.kubernetes.io/name" = "prometheus-node-exporter"
+        }
+      }
+
+      podMetricsEndpoints = [{
+        port     = "metrics"
+        path     = "/metrics"
+        interval = "30s"
+
+        relabelings = [
+          {
+            sourceLabels = ["__meta_kubernetes_pod_node_name"]
+            targetLabel  = "node"
+          },
+          {
+            sourceLabels = ["__meta_kubernetes_pod_node_name"]
+            targetLabel  = "instance"
+          }
+        ]
+      }]
+    }
+  }
+} */
+
+# resource "kubernetes_manifest" "kube_state_metrics_pm" {
+#   manifest = {
+#     apiVersion = "monitoring.coreos.com/v1"
+#     kind       = "PodMonitor"
+
+#     metadata = {
+#       name      = "kube-state-metrics"
+#       namespace = "monitoring"
+#       labels = {
+#         release = "prometheus"
+#       }
+#     }
+
+#     spec = {
+#       jobLabel = "kube-state-metrics"
+
+#       namespaceSelector = {
+#         matchNames = ["monitoring", "kube-system"]
+#       }
+
+#       selector = {
+#         matchLabels = {
+#           "app.kubernetes.io/name" = "kube-state-metrics"
+#         }
+#       }
+
+#       podMetricsEndpoints = [{
+#         port        = "http"
+#         path        = "/metrics"
+#         interval    = "30s"
+#         honorLabels = true
+#       }]
+#     }
+#   }
+# }

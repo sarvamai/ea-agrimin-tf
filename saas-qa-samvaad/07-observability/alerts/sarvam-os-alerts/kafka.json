@@ -109,7 +109,7 @@
     "is_paused": false,
     "severity": "critical",
     "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/Kafka_Strimzi_Alerting_Runbook.md#kafka-007-controller-not-active",
-    "expression": "sum(kafka_controller_kafkacontroller_activecontrollercount)",
+    "expression": "sum(kafka_controller_kafkacontroller_activecontrollercount{job=\"monitoring/strimzi-kafka-by-port\"})",
     "threshold": 1,
     "exec_err_state": "KeepLast",
     "condition": "gt",
