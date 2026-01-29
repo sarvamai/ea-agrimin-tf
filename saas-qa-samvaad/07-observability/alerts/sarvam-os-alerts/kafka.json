@@ -31,7 +31,7 @@
   },
   {
     "name": "Kafka Consumer Lag Critical",
-    "is_paused": false,
+    "is_paused": true,
     "severity": "critical",
     "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/Kafka_Strimzi_Alerting_Runbook.md#kafka-003-high-consumer-lag-critical",
     "expression": "max(kafka_consumergroup_lag) by (consumergroup, topic, partition)",
@@ -121,7 +121,7 @@
   },
   {
     "name": "Kafka Consumer Lag Warning",
-    "is_paused": false,
+    "is_paused": true,
     "severity": "warning",
     "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/Kafka_Strimzi_Alerting_Runbook.md#kafka-008-high-consumer-lag-warning",
     "expression": "max(kafka_consumergroup_lag) by (consumergroup, topic, partition)",

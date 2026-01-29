@@ -139,9 +139,9 @@
     "is_paused": false,
     "severity": "warning",
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Redis_HA_Alerting_Runbook.md#redis-010-low-cache-hit-ratio",
-    "expression": "100 * (rate(redis_keyspace_hits_total[5m]) / (rate(redis_keyspace_hits_total[5m]) + rate(redis_keyspace_misses_total[5m])))",
+    "expression": "(rate(redis_keyspace_hits_total[5m]) / (rate(redis_keyspace_hits_total[5m]) + rate(redis_keyspace_misses_total[5m]) > 0)) * 100 < 70",
     "threshold": 70,
-    "exec_err_state": "KeepLast",
+    "exec_err_state": "OK",
     "condition": "lt",
     "annotations": {
       "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: Cache hit ratio at {{ printf \"%.1f\" .Value }}% (< 70%). Inefficient caching.{{ end }}",
@@ -171,7 +171,8 @@
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Redis_HA_Alerting_Runbook.md#redis-012-high-memory-fragmentation",
     "expression": "redis_mem_fragmentation_ratio and (redis_memory_used_bytes > 100000000)",
     "threshold": 1.5,
-    "exec_err_state": "KeepLast",
+    "exec_err_state": "Error",
+    "no_data_state": "OK",
     "condition": "gt",
     "annotations": {
       "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: Memory fragmentation ratio at {{ printf \"%.2f\" .Value }} (> 1.5). Inefficient memory usage.{{ end }}",

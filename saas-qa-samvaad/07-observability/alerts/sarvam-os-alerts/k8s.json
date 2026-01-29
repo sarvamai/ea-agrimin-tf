@@ -6,7 +6,7 @@
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kubernetes_Alerting_Runbook.md#k8s-001-pod-not-running",
     "expression": "sum by (namespace, pod) (kube_pod_status_phase{phase=~\"Pending|Failed|Unknown\"}) > 0",
     "threshold": 0,
-    "exec_err_state": "KeepLast",
+    "exec_err_state": "OK",
     "condition": "gt",
     "annotations": {
       "FiringAlertValues": "*Component:* Kubernetes\\n*Namespace:* {{ with $values.A }}{{ .Labels.namespace }}{{ end }}\\n*Pod:* {{ with $values.A }}{{ .Labels.pod }}{{ end }}\\n\\nCRITICAL: Pod is not in Running state. Check pod status: `kubectl describe pod {{ with $values.A }}{{ .Labels.pod }}{{ end }} -n {{ with $values.A }}{{ .Labels.namespace }}{{ end }}`",
@@ -21,7 +21,7 @@
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kubernetes_Alerting_Runbook.md#k8s-002-deployment-replica-mismatch",
     "expression": "(kube_deployment_spec_replicas - kube_deployment_status_replicas_available) > 0",
     "threshold": 0,
-    "exec_err_state": "KeepLast",
+    "exec_err_state": "OK",
     "condition": "gt",
     "annotations": {
       "FiringAlertValues": "*Component:* Kubernetes\\n*Namespace:* {{ with $values.A }}{{ .Labels.namespace }}{{ end }}\\n*Deployment:* {{ with $values.A }}{{ .Labels.deployment }}{{ end }}\\n\\nCRITICAL: Deployment has fewer available replicas than desired. Missing {{ with $values.A }}{{ .Value }}{{ end }} replica(s).",
@@ -36,7 +36,7 @@
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kubernetes_Alerting_Runbook.md#k8s-003-statefulset-replica-mismatch",
     "expression": "(kube_statefulset_replicas - kube_statefulset_status_replicas_ready) > 0",
     "threshold": 0,
-    "exec_err_state": "KeepLast",
+    "exec_err_state": "OK",
     "condition": "gt",
     "annotations": {
       "FiringAlertValues": "*Component:* Kubernetes\\n*Namespace:* {{ with $values.A }}{{ .Labels.namespace }}{{ end }}\\n*StatefulSet:* {{ with $values.A }}{{ .Labels.statefulset }}{{ end }}\\n\\nCRITICAL: StatefulSet has fewer ready pods than desired. DO NOT manually delete StatefulSet pods.",
@@ -51,7 +51,7 @@
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kubernetes_Alerting_Runbook.md#k8s-004-daemonset-not-ready-on-all-nodes",
     "expression": "(kube_daemonset_status_desired_number_scheduled - kube_daemonset_status_number_ready) > 0",
     "threshold": 0,
-    "exec_err_state": "KeepLast",
+    "exec_err_state": "OK",
     "condition": "gt",
     "annotations": {
       "FiringAlertValues": "*Component:* Kubernetes\\n*Namespace:* {{ with $values.A }}{{ .Labels.namespace }}{{ end }}\\n*DaemonSet:* {{ with $values.A }}{{ .Labels.daemonset }}{{ end }}\\n\\nCRITICAL: DaemonSet pods are not ready on all schedulable nodes. Check tolerations and node taints.",
@@ -66,7 +66,7 @@
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kubernetes_Alerting_Runbook.md#k8s-005-job-failure-rate-high",
     "expression": "sum by (namespace, job_name) (increase(kube_job_status_failed{job_name!=\"\"}[5m])) > 0",
     "threshold": 0,
-    "exec_err_state": "KeepLast",
+    "exec_err_state": "OK",
     "condition": "gt",
     "annotations": {
       "FiringAlertValues": "*Component:* Kubernetes\\n*Namespace:* {{ with $values.A }}{{ .Labels.namespace }}{{ end }}\\n*Job:* {{ with $values.A }}{{ .Labels.job_name }}{{ end }}\\n\\nCRITICAL: Job failure detected. Review job logs for errors.",
@@ -81,7 +81,7 @@
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kubernetes_Alerting_Runbook.md#k8s-006-node-cpu-critical",
     "expression": "(1 - avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m]))) > 0.95",
     "threshold": 0.95,
-    "exec_err_state": "KeepLast",
+    "exec_err_state": "OK",
     "condition": "gt",
     "annotations": {
       "FiringAlertValues": "*Component:* Kubernetes\\n*Node:* {{ with $values.A }}{{ .Labels.instance }}{{ end }}\\n\\nCRITICAL: Node CPU usage > 95%. Risk of pod scheduling issues and performance degradation.",
@@ -96,7 +96,7 @@
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kubernetes_Alerting_Runbook.md#k8s-007-node-memory-critical",
     "expression": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.95",
     "threshold": 0.95,
-    "exec_err_state": "KeepLast",
+    "exec_err_state": "OK",
     "condition": "gt",
     "annotations": {
       "FiringAlertValues": "*Component:* Kubernetes\\n*Node:* {{ with $values.A }}{{ .Labels.instance }}{{ end }}\\n\\nCRITICAL: Node memory usage > 95%. Risk of OOM kills and pod evictions.",
@@ -111,7 +111,7 @@
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kubernetes_Alerting_Runbook.md#k8s-008-node-disk-space-critical",
     "expression": "(1 - (node_filesystem_avail_bytes{fstype!~\"tmpfs|overlay\", mountpoint=\"/\"} / node_filesystem_size_bytes{fstype!~\"tmpfs|overlay\", mountpoint=\"/\"})) > 0.90",
     "threshold": 0.90,
-    "exec_err_state": "KeepLast",
+    "exec_err_state": "OK",
     "condition": "gt",
     "annotations": {
       "FiringAlertValues": "*Component:* Kubernetes\\n*Node:* {{ with $values.A }}{{ .Labels.instance }}{{ end }}\\n*Mountpoint:* {{ with $values.A }}{{ .Labels.mountpoint }}{{ end }}\\n\\nCRITICAL: Node disk usage > 90%. Risk of pod failures and inability to write logs.",
@@ -126,7 +126,7 @@
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kubernetes_Alerting_Runbook.md#k8s-009-pod-cpu-throttling",
     "expression": "sum by (namespace, pod) (rate(container_cpu_cfs_throttled_seconds_total{container!=\"\", container!=\"POD\"}[5m])) > 0.1",
     "threshold": 0.1,
-    "exec_err_state": "KeepLast",
+    "exec_err_state": "OK",
     "condition": "gt",
     "annotations": {
       "FiringAlertValues": "*Component:* Kubernetes\\n*Namespace:* {{ with $values.A }}{{ .Labels.namespace }}{{ end }}\\n*Pod:* {{ with $values.A }}{{ .Labels.pod }}{{ end }}\\n\\nCRITICAL: Pod is experiencing CPU throttling (>10% of time). Consider increasing CPU limits.",
@@ -139,9 +139,9 @@
     "is_paused": false,
     "severity": "critical",
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kubernetes_Alerting_Runbook.md#k8s-010-pod-memory-approaching-limit",
-    "expression": "sum by (namespace, pod) (container_memory_working_set_bytes{container!=\"\", container!=\"POD\"}) / sum by (namespace, pod) (kube_pod_container_resource_limits{resource=\"memory\"}) > 0.95",
+    "expression": "sum by (namespace, pod) (container_memory_working_set_bytes{container!=\"\", container!=\"POD\", pod!~\"anetd-.*\"}) \n/ \nsum by (namespace, pod) (kube_pod_container_resource_limits{resource=\"memory\", pod!~\"anetd-.*\"})",
     "threshold": 0.95,
-    "exec_err_state": "KeepLast",
+    "exec_err_state": "OK",
     "condition": "gt",
     "annotations": {
       "FiringAlertValues": "*Component:* Kubernetes\\n*Namespace:* {{ with $values.A }}{{ .Labels.namespace }}{{ end }}\\n*Pod:* {{ with $values.A }}{{ .Labels.pod }}{{ end }}\\n\\nCRITICAL: Pod memory usage > 95% of limit. Risk of OOM kill imminent.",
@@ -156,7 +156,7 @@
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kubernetes_Alerting_Runbook.md#k8s-011-high-network-error-rate",
     "expression": "sum by (instance) (rate(node_network_receive_errs_total[5m]) + rate(node_network_transmit_errs_total[5m])) > 100",
     "threshold": 100,
-    "exec_err_state": "KeepLast",
+    "exec_err_state": "OK",
     "condition": "gt",
     "annotations": {
       "FiringAlertValues": "*Component:* Kubernetes\\n*Node:* {{ with $values.A }}{{ .Labels.instance }}{{ end }}\\n\\nCRITICAL: High network error rate on node (>100/sec). Check network interface and policies.",
@@ -171,7 +171,7 @@
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kubernetes_Alerting_Runbook.md#k8s-011-high-network-error-rate",
     "expression": "sum by (namespace, pod) (rate(container_network_receive_errors_total[5m]) + rate(container_network_transmit_errors_total[5m])) > 10",
     "threshold": 10,
-    "exec_err_state": "KeepLast",
+    "exec_err_state": "OK",
     "condition": "gt",
     "annotations": {
       "FiringAlertValues": "*Component:* Kubernetes\\n*Namespace:* {{ with $values.A }}{{ .Labels.namespace }}{{ end }}\\n*Pod:* {{ with $values.A }}{{ .Labels.pod }}{{ end }}\\n\\nCRITICAL: High network error rate on pod (>10/sec). Check network policies and DNS.",
@@ -186,7 +186,7 @@
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kubernetes_Alerting_Runbook.md#k8s-012-deployment-replica-mismatch-warning",
     "expression": "((kube_deployment_spec_replicas - kube_deployment_status_replicas_available) / kube_deployment_spec_replicas) > 0.1",
     "threshold": 0.1,
-    "exec_err_state": "KeepLast",
+    "exec_err_state": "OK",
     "condition": "gt",
     "annotations": {
       "FiringAlertValues": "*Component:* Kubernetes\\n*Namespace:* {{ with $values.A }}{{ .Labels.namespace }}{{ end }}\\n*Deployment:* {{ with $values.A }}{{ .Labels.deployment }}{{ end }}\\n\\nWARNING: >10% of deployment replicas unavailable. Monitor trend before it becomes critical.",
@@ -201,7 +201,7 @@
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kubernetes_Alerting_Runbook.md#k8s-013-node-cpu-high",
     "expression": "(1 - avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m]))) > 0.80",
     "threshold": 0.80,
-    "exec_err_state": "KeepLast",
+    "exec_err_state": "OK",
     "condition": "gt",
     "annotations": {
       "FiringAlertValues": "*Component:* Kubernetes\\n*Node:* {{ with $values.A }}{{ .Labels.instance }}{{ end }}\\n\\nWARNING: Node CPU usage > 80%. Consider scaling or optimizing workloads.",
@@ -216,7 +216,7 @@
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kubernetes_Alerting_Runbook.md#k8s-014-node-memory-high",
     "expression": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.80",
     "threshold": 0.80,
-    "exec_err_state": "KeepLast",
+    "exec_err_state": "OK",
     "condition": "gt",
     "annotations": {
       "FiringAlertValues": "*Component:* Kubernetes\\n*Node:* {{ with $values.A }}{{ .Labels.instance }}{{ end }}\\n\\nWARNING: Node memory usage > 80%. Monitor for memory leaks or consider scaling.",
@@ -231,7 +231,7 @@
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kubernetes_Alerting_Runbook.md#k8s-015-node-disk-space-warning",
     "expression": "(1 - (node_filesystem_avail_bytes{fstype!~\"tmpfs|overlay\", mountpoint=\"/\"} / node_filesystem_size_bytes{fstype!~\"tmpfs|overlay\", mountpoint=\"/\"})) > 0.80",
     "threshold": 0.80,
-    "exec_err_state": "KeepLast",
+    "exec_err_state": "OK",
     "condition": "gt",
     "annotations": {
       "FiringAlertValues": "*Component:* Kubernetes\\n*Node:* {{ with $values.A }}{{ .Labels.instance }}{{ end }}\\n*Mountpoint:* {{ with $values.A }}{{ .Labels.mountpoint }}{{ end }}\\n\\nWARNING: Node disk usage > 80%. Review log rotation and image garbage collection.",
@@ -246,7 +246,7 @@
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kubernetes_Alerting_Runbook.md#k8s-016-pod-cpu-high",
     "expression": "sum by (namespace, pod) (rate(container_cpu_usage_seconds_total{container!=\"\", container!=\"POD\"}[5m])) / sum by (namespace, pod) (kube_pod_container_resource_limits{resource=\"cpu\"}) > 0.80",
     "threshold": 0.80,
-    "exec_err_state": "KeepLast",
+    "exec_err_state": "OK",
     "condition": "gt",
     "annotations": {
       "FiringAlertValues": "*Component:* Kubernetes\\n*Namespace:* {{ with $values.A }}{{ .Labels.namespace }}{{ end }}\\n*Pod:* {{ with $values.A }}{{ .Labels.pod }}{{ end }}\\n\\nWARNING: Pod CPU usage > 80% of limit. Consider increasing CPU limit or optimizing.",
@@ -259,9 +259,9 @@
     "is_paused": false,
     "severity": "warning",
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kubernetes_Alerting_Runbook.md#k8s-017-pod-memory-high",
-    "expression": "sum by (namespace, pod) (container_memory_working_set_bytes{container!=\"\", container!=\"POD\"}) / sum by (namespace, pod) (kube_pod_container_resource_limits{resource=\"memory\"}) > 0.80",
+    "expression": "sum by (namespace, pod) (container_memory_working_set_bytes{container!=\"\", container!=\"POD\", pod!~\"anetd-.*\"}) / sum by (namespace, pod) (kube_pod_container_resource_limits{resource=\"memory\", pod!~\"anetd-.*\"})",
     "threshold": 0.80,
-    "exec_err_state": "KeepLast",
+    "exec_err_state": "OK",
     "condition": "gt",
     "annotations": {
       "FiringAlertValues": "*Component:* Kubernetes\\n*Namespace:* {{ with $values.A }}{{ .Labels.namespace }}{{ end }}\\n*Pod:* {{ with $values.A }}{{ .Labels.pod }}{{ end }}\\n\\nWARNING: Pod memory usage > 80% of limit. Check for memory leaks.",
@@ -276,7 +276,7 @@
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kubernetes_Alerting_Runbook.md#k8s-018-pod-filesystem-usage-high",
     "expression": "sum by (namespace, pod) (container_fs_usage_bytes{container!=\"\", container!=\"POD\"}) / sum by (namespace, pod) (container_fs_limit_bytes{container!=\"\", container!=\"POD\"}) > 0.80",
     "threshold": 0.80,
-    "exec_err_state": "KeepLast",
+    "exec_err_state": "OK",
     "condition": "gt",
     "annotations": {
       "FiringAlertValues": "*Component:* Kubernetes\\n*Namespace:* {{ with $values.A }}{{ .Labels.namespace }}{{ end }}\\n*Pod:* {{ with $values.A }}{{ .Labels.pod }}{{ end }}\\n\\nWARNING: Pod filesystem usage > 80%. Review application logging and file cleanup.",
@@ -291,7 +291,7 @@
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kubernetes_Alerting_Runbook.md#k8s-019-hpa-at-max-replicas",
     "expression": "kube_horizontalpodautoscaler_status_current_replicas >= kube_horizontalpodautoscaler_spec_max_replicas",
     "threshold": 0,
-    "exec_err_state": "KeepLast",
+    "exec_err_state": "OK",
     "condition": "gt",
     "annotations": {
       "FiringAlertValues": "*Component:* Kubernetes\\n*Namespace:* {{ with $values.A }}{{ .Labels.namespace }}{{ end }}\\n*HPA:* {{ with $values.A }}{{ .Labels.horizontalpodautoscaler }}{{ end }}\\n\\nWARNING: HPA has scaled to maximum replicas. Consider increasing max replicas or optimizing application.",
@@ -306,7 +306,7 @@
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kubernetes_Alerting_Runbook.md#k8s-020-high-network-io",
     "expression": "sum by (instance) (rate(node_network_receive_bytes_total{device!~\"lo|veth.*|docker.*|flannel.*|cali.*|cbr.*\"}[5m]) + rate(node_network_transmit_bytes_total{device!~\"lo|veth.*|docker.*|flannel.*|cali.*|cbr.*\"}[5m])) > 1000000000",
     "threshold": 1000000000,
-    "exec_err_state": "KeepLast",
+    "exec_err_state": "OK",
     "condition": "gt",
     "annotations": {
       "FiringAlertValues": "*Component:* Kubernetes\\n*Node:* {{ with $values.A }}{{ .Labels.instance }}{{ end }}\\n\\nWARNING: Node network I/O > 1 GB/s. Potential bandwidth saturation.",
@@ -321,7 +321,7 @@
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kubernetes_Alerting_Runbook.md#k8s-021-pod-restart-count-high",
     "expression": "increase(kube_pod_container_status_restarts_total[1h]) > 5",
     "threshold": 5,
-    "exec_err_state": "KeepLast",
+    "exec_err_state": "OK",
     "condition": "gt",
     "annotations": {
       "FiringAlertValues": "*Component:* Kubernetes\\n*Namespace:* {{ with $values.A }}{{ .Labels.namespace }}{{ end }}\\n*Pod:* {{ with $values.A }}{{ .Labels.pod }}{{ end }}\\n*Container:* {{ with $values.A }}{{ .Labels.container }}{{ end }}\\n\\nWARNING: Pod has restarted {{ with $values.A }}{{ .Value }}{{ end }} times in the last hour. Review logs for crash causes.",
@@ -336,7 +336,7 @@
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kubernetes_Alerting_Runbook.md#k8s-001-pod-not-running",
     "expression": "sum by (namespace, pod, container) (kube_pod_container_status_waiting_reason{reason=\"CrashLoopBackOff\"}) > 0",
     "threshold": 0,
-    "exec_err_state": "KeepLast",
+    "exec_err_state": "OK",
     "condition": "gt",
     "annotations": {
       "FiringAlertValues": "*Component:* Kubernetes\\n*Namespace:* {{ with $values.A }}{{ .Labels.namespace }}{{ end }}\\n*Pod:* {{ with $values.A }}{{ .Labels.pod }}{{ end }}\\n*Container:* {{ with $values.A }}{{ .Labels.container }}{{ end }}\\n\\nCRITICAL: Container is in CrashLoopBackOff. Check logs: `kubectl logs {{ with $values.A }}{{ .Labels.pod }}{{ end }} -c {{ with $values.A }}{{ .Labels.container }}{{ end }} -n {{ with $values.A }}{{ .Labels.namespace }}{{ end }}`",
@@ -351,7 +351,7 @@
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kubernetes_Alerting_Runbook.md#k8s-001-pod-not-running",
     "expression": "sum by (namespace, pod, container) (kube_pod_container_status_waiting_reason{reason=~\"ImagePullBackOff|ErrImagePull\"}) > 0",
     "threshold": 0,
-    "exec_err_state": "KeepLast",
+    "exec_err_state": "OK",
     "condition": "gt",
     "annotations": {
       "FiringAlertValues": "*Component:* Kubernetes\\n*Namespace:* {{ with $values.A }}{{ .Labels.namespace }}{{ end }}\\n*Pod:* {{ with $values.A }}{{ .Labels.pod }}{{ end }}\\n*Container:* {{ with $values.A }}{{ .Labels.container }}{{ end }}\\n\\nCRITICAL: Container image pull failed. Check image name, tag, and pull secrets.",
@@ -366,7 +366,7 @@
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kubernetes_Alerting_Runbook.md#k8s-006-node-cpu-critical",
     "expression": "kube_node_status_condition{condition=\"Ready\", status=\"true\"} == 0",
     "threshold": 0,
-    "exec_err_state": "KeepLast",
+    "exec_err_state": "OK",
     "condition": "eq",
     "annotations": {
       "FiringAlertValues": "*Component:* Kubernetes\\n*Node:* {{ with $values.A }}{{ .Labels.node }}{{ end }}\\n\\nCRITICAL: Node is not in Ready state. Check kubelet status and node connectivity.",
@@ -381,7 +381,7 @@
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kubernetes_Alerting_Runbook.md#k8s-007-node-memory-critical",
     "expression": "kube_node_status_condition{condition=\"MemoryPressure\", status=\"true\"} == 1",
     "threshold": 1,
-    "exec_err_state": "KeepLast",
+    "exec_err_state": "OK",
     "condition": "eq",
     "annotations": {
       "FiringAlertValues": "*Component:* Kubernetes\\n*Node:* {{ with $values.A }}{{ .Labels.node }}{{ end }}\\n\\nWARNING: Node is under memory pressure. Pods may be evicted.",
@@ -396,7 +396,7 @@
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kubernetes_Alerting_Runbook.md#k8s-008-node-disk-space-critical",
     "expression": "kube_node_status_condition{condition=\"DiskPressure\", status=\"true\"} == 1",
     "threshold": 1,
-    "exec_err_state": "KeepLast",
+    "exec_err_state": "OK",
     "condition": "eq",
     "annotations": {
       "FiringAlertValues": "*Component:* Kubernetes\\n*Node:* {{ with $values.A }}{{ .Labels.node }}{{ end }}\\n\\nWARNING: Node is under disk pressure. Pods may be evicted. Clean up disk space.",
@@ -411,7 +411,7 @@
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kubernetes_Alerting_Runbook.md#k8s-006-node-cpu-critical",
     "expression": "kube_node_status_condition{condition=\"PIDPressure\", status=\"true\"} == 1",
     "threshold": 1,
-    "exec_err_state": "KeepLast",
+    "exec_err_state": "OK",
     "condition": "eq",
     "annotations": {
       "FiringAlertValues": "*Component:* Kubernetes\\n*Node:* {{ with $values.A }}{{ .Labels.node }}{{ end }}\\n\\nWARNING: Node is under PID pressure. Too many processes running.",
@@ -426,7 +426,7 @@
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kubernetes_Alerting_Runbook.md#k8s-003-statefulset-replica-mismatch",
     "expression": "kube_persistentvolumeclaim_status_phase{phase=\"Pending\"} == 1",
     "threshold": 1,
-    "exec_err_state": "KeepLast",
+    "exec_err_state": "OK",
     "condition": "eq",
     "annotations": {
       "FiringAlertValues": "*Component:* Kubernetes\\n*Namespace:* {{ with $values.A }}{{ .Labels.namespace }}{{ end }}\\n*PVC:* {{ with $values.A }}{{ .Labels.persistentvolumeclaim }}{{ end }}\\n\\nWARNING: PersistentVolumeClaim is pending. Check storage class and available PVs.",
@@ -441,7 +441,7 @@
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kubernetes_Alerting_Runbook.md#k8s-003-statefulset-replica-mismatch",
     "expression": "kube_persistentvolume_status_phase{phase=\"Available\"} == 1",
     "threshold": 1,
-    "exec_err_state": "KeepLast",
+    "exec_err_state": "OK",
     "condition": "eq",
     "annotations": {
       "FiringAlertValues": "*Component:* Kubernetes\\n*PV:* {{ with $values.A }}{{ .Labels.persistentvolume }}{{ end }}\\n\\nINFO: PersistentVolume is available but not bound. This may be expected for dynamically provisioned PVs.",
@@ -456,12 +456,104 @@
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kubernetes_Alerting_Runbook.md#k8s-010-pod-memory-approaching-limit",
     "expression": "sum by (namespace, pod, container) (kube_pod_container_status_last_terminated_reason{reason=\"OOMKilled\"}) > 0",
     "threshold": 0,
-    "exec_err_state": "KeepLast",
+    "exec_err_state": "OK",
     "condition": "gt",
     "annotations": {
       "FiringAlertValues": "*Component:* Kubernetes\\n*Namespace:* {{ with $values.A }}{{ .Labels.namespace }}{{ end }}\\n*Pod:* {{ with $values.A }}{{ .Labels.pod }}{{ end }}\\n*Container:* {{ with $values.A }}{{ .Labels.container }}{{ end }}\\n\\nWARNING: Container was OOMKilled. Increase memory limits or fix memory leak.",
       "ResolvedAlertValues": "*Component:* Kubernetes\\n\\nNo recent OOMKill events."
     },
     "for": "0m"
+  },
+  {
+    "name": "Pods High CPU Usage",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kubernetes_Alerting_Runbook.md#k8s-010-pod-memory-approaching-limit",
+    "expression": "100 * (\n  sum by (pod, namespace) (rate(container_cpu_usage_seconds_total{container!=\"\", pod!~\"(collector|gmp-operator)-.*\"}[5m])) \n  / \n  sum by (pod, namespace) (kube_pod_container_resource_requests{resource=\"cpu\", pod!~\"(collector|gmp-operator)-.*\"})\n)",
+    "threshold": 80,
+    "exec_err_state": "OK",
+    "no_data_state": "OK",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: CPU usage at {{ printf \"%.1f\" .Value }}% of requests (> 80%). Consider scaling or query optimization.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nCPU usage recovered to {{ printf \"%.1f\" .Value }}%.{{ end }}"
+    },
+    "for": "10m"
+  },
+  {
+    "name": "Pods High Memory Usage",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/CloudNativePG_Alerting_Runbook.md#cnpg-021-high-memory-utilization",
+    "expression": "100 * (\n  sum by (pod, namespace) (container_memory_working_set_bytes{container!=\"\", pod!~\"(anetd|gmp-operator|collector|node-local-dns)-.*\"}) \n  / \n  sum by (pod, namespace) (kube_pod_container_resource_requests{resource=\"memory\", pod!~\"(anetd|gmp-operator|collector|node-local-dns)-.*\"})\n) > 90",
+    "threshold": 90,
+    "exec_err_state": "OK",
+    "no_data_state": "OK",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: Memory usage at {{ printf \"%.1f\" .Value }}% of requests (> 90%). OOM risk.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nMemory usage recovered to {{ printf \"%.1f\" .Value }}%.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Infra Pod CPU Critical",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Infra_Alerting_Runbook.md#infra-001-pod-cpu-critical",
+    "expression": "100 * sum by (namespace, pod) (rate(container_cpu_usage_seconds_total{namespace=~\"postgres|clickhouse-samvaad|kong|kafka|monitoring|redis\", container!=\"\"}[5m])) / sum by (namespace, pod) (kube_pod_container_resource_limits{namespace=~\"postgres|clickhouse-samvaad|kong|kafka|monitoring|redis\", resource=\"cpu\"})",
+    "threshold": 90,
+    "exec_err_state": "OK",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "*Component:* Infrastructure\n*Namespace:* {{ with $values.A }}{{ .Labels.namespace }}{{ end }}\n*Pod:* {{ with $values.A }}{{ .Labels.pod }}{{ end }}\n\nCRITICAL: Pod CPU usage is at {{ printf \"%.0f\" .Value }}% of its limit. Performance degradation likely.",
+      "ResolvedAlertValues": "*Component:* Infrastructure\n\nPod CPU usage has returned to normal levels."
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Infra Pod Memory Critical",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Infra_Alerting_Runbook.md#infra-002-pod-memory-critical",
+    "expression": "100 * sum by (namespace, pod) (container_memory_working_set_bytes{namespace=~\"postgres|clickhouse-samvaad|kong|kafka|monitoring|redis\", container!=\"\"}) / sum by (namespace, pod) (kube_pod_container_resource_limits{namespace=~\"postgres|clickhouse-samvaad|kong|kafka|monitoring|redis\", resource=\"memory\"})",
+    "threshold": 90,
+    "exec_err_state": "OK",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "*Component:* Infrastructure\n*Namespace:* {{ with $values.A }}{{ .Labels.namespace }}{{ end }}\n*Pod:* {{ with $values.A }}{{ .Labels.pod }}{{ end }}\n\nCRITICAL: Pod Memory usage is at {{ printf \"%.0f\" .Value }}% of its limit. Risk of OOMKill.",
+      "ResolvedAlertValues": "*Component:* Infrastructure\n\nPod Memory usage has returned to normal levels."
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Infra Pod CPU Warning",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Infra_Alerting_Runbook.md#infra-003-pod-cpu-warning",
+    "expression": "100 * sum by (namespace, pod) (rate(container_cpu_usage_seconds_total{namespace=~\"postgres|clickhouse-samvaad|kong|kafka|monitoring|redis\", container!=\"\"}[5m])) / sum by (namespace, pod) (kube_pod_container_resource_limits{namespace=~\"postgres|clickhouse-samvaad|kong|kafka|monitoring|redis\", resource=\"cpu\"})",
+    "threshold": 80,
+    "exec_err_state": "OK",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "*Component:* Infrastructure\n*Namespace:* {{ with $values.A }}{{ .Labels.namespace }}{{ end }}\n*Pod:* {{ with $values.A }}{{ .Labels.pod }}{{ end }}\n\nWARNING: Pod CPU usage is high ({{ printf \"%.0f\" .Value }}%).",
+      "ResolvedAlertValues": "*Component:* Infrastructure\n\nPod CPU usage has returned to normal levels."
+    },
+    "for": "10m"
+  },
+  {
+    "name": "Infra Pod Memory Warning",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Infra_Alerting_Runbook.md#infra-004-pod-memory-warning",
+    "expression": "100 * sum by (namespace, pod) (container_memory_working_set_bytes{namespace=~\"postgres|clickhouse-samvaad|kong|kafka|monitoring|redis\", container!=\"\"}) / sum by (namespace, pod) (kube_pod_container_resource_limits{namespace=~\"postgres|clickhouse-samvaad|kong|kafka|monitoring|redis\", resource=\"memory\"})",
+    "threshold": 80,
+    "exec_err_state": "OK",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "*Component:* Infrastructure\n*Namespace:* {{ with $values.A }}{{ .Labels.namespace }}{{ end }}\n*Pod:* {{ with $values.A }}{{ .Labels.pod }}{{ end }}\n\nWARNING: Pod Memory usage is high ({{ printf \"%.0f\" .Value }}%).",
+      "ResolvedAlertValues": "*Component:* Infrastructure\n\nPod Memory usage has returned to normal levels."
+    },
+    "for": "10m"
   }
 ]

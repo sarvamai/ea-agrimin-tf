@@ -148,7 +148,7 @@ resource "grafana_rule_group" "cnpg_rules" {
           intervalMs    = local.interval_ms
           range         = false
           instant       = true
-          legendFormat  = "__auto"
+          legendFormat  = lookup(rule.value, "legendFormat", "__auto")
           maxDataPoints = local.max_data_points
           refId         = "A"
         })
@@ -206,8 +206,8 @@ resource "grafana_rule_group" "cnpg_rules" {
         team     = each.key
         severity = lookup(rule.value, "severity", "warning")
       }
-      no_data_state  = local.rule_common.no_data_state
-      exec_err_state = local.rule_common.exec_err_state
+      no_data_state  = lookup(rule.value, "no_data_state", local.rule_common.no_data_state)
+      exec_err_state = lookup(rule.value, "exec_err_state", local.rule_common.exec_err_state)
       for            = rule.value.for
     }
   }
@@ -497,8 +497,8 @@ resource "grafana_rule_group" "kong_rules" {
         team     = each.key
         severity = lookup(rule.value, "severity", "warning")
       }
-      no_data_state  = local.rule_common.no_data_state
-      exec_err_state = local.rule_common.exec_err_state
+      no_data_state  = lookup(rule.value, "no_data_state", local.rule_common.no_data_state)
+      exec_err_state = lookup(rule.value, "exec_err_state", local.rule_common.exec_err_state)
       for            = rule.value.for
     }
   }
@@ -593,8 +593,8 @@ resource "grafana_rule_group" "redis_rules" {
         team     = each.key
         severity = lookup(rule.value, "severity", "warning")
       }
-      no_data_state  = local.rule_common.no_data_state
-      exec_err_state = local.rule_common.exec_err_state
+      no_data_state  = lookup(rule.value, "no_data_state", local.rule_common.no_data_state)
+      exec_err_state = lookup(rule.value, "exec_err_state", local.rule_common.exec_err_state)
       for            = rule.value.for
     }
   }
@@ -689,7 +689,7 @@ resource "grafana_rule_group" "k8s_rules" {
         team     = each.key
         severity = lookup(rule.value, "severity", "warning")
       }
-      no_data_state  = local.rule_common.no_data_state
+      no_data_state  = "OK"
       exec_err_state = local.rule_common.exec_err_state
       for            = rule.value.for
     }

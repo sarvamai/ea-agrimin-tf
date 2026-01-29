@@ -124,9 +124,10 @@
     "is_paused": false,
     "severity": "critical",
     "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/CloudNativePG_Alerting_Runbook.md#cnpg-009-no-recent-backup",
-    "expression": "(time() - cnpg_collector_last_available_backup_timestamp) / 3600",
+    "expression": "(time() - max by (namespace) (cnpg_collector_last_available_backup_timestamp)) / 3600",
     "threshold": 24,
     "exec_err_state": "KeepLast",
+    "legendFormat": "{{pod}}",
     "condition": "gt",
     "annotations": {
       "FiringAlertValues": "{{ with $values.A }}*Cluster:* {{ .Labels.cluster }}\n*Namespace:* {{ .Labels.namespace }}\n\nCRITICAL: No successful backup in {{ printf \"%.1f\" .Value }} hours (> 24h threshold). Check backup jobs.{{ end }}",
@@ -274,45 +275,13 @@
     "is_paused": false,
     "severity": "warning",
     "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/CloudNativePG_Alerting_Runbook.md#cnpg-019-wal-archive-delay",
-    "expression": "max by (pod, namespace) (cnpg_pg_stat_archiver_seconds_since_last_archival)",
+    "expression": "min by (namespace) (cnpg_pg_stat_archiver_seconds_since_last_archival)",
     "threshold": 300,
     "exec_err_state": "KeepLast",
     "condition": "gt",
     "annotations": {
       "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: No WAL archived for {{ printf \"%.0f\" .Value }}s (> 300s). RPO at risk.{{ end }}",
       "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nWAL archiving resumed. Last archive {{ printf \"%.0f\" .Value }}s ago.{{ end }}"
-    },
-    "for": "5m"
-  },
-  {
-    "name": "CNPG High CPU Usage",
-    "is_paused": false,
-    "severity": "warning",
-    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/CloudNativePG_Alerting_Runbook.md#cnpg-020-high-cpu-utilization",
-    "expression": "100 * (sum by (pod, namespace) (rate(container_cpu_usage_seconds_total{container!=\"\"}[5m])) / sum by (pod, namespace) (kube_pod_container_resource_requests{resource=\"cpu\"}))",
-    "threshold": 80,
-    "exec_err_state": "KeepLast",
-    "no_data_state": "Ok",
-    "condition": "gt",
-    "annotations": {
-      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: CPU usage at {{ printf \"%.1f\" .Value }}% of requests (> 80%). Consider scaling or query optimization.{{ end }}",
-      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nCPU usage recovered to {{ printf \"%.1f\" .Value }}%.{{ end }}"
-    },
-    "for": "10m"
-  },
-  {
-    "name": "CNPG High Memory Usage",
-    "is_paused": false,
-    "severity": "warning",
-    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/CloudNativePG_Alerting_Runbook.md#cnpg-021-high-memory-utilization",
-    "expression": "100 * (sum by (pod, namespace) (container_memory_working_set_bytes{container!=\"\"}) / sum by (pod, namespace) (kube_pod_container_resource_requests{resource=\"memory\"}))",
-    "threshold": 90,
-    "exec_err_state": "KeepLast",
-    "no_data_state": "Ok",
-    "condition": "gt",
-    "annotations": {
-      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: Memory usage at {{ printf \"%.1f\" .Value }}% of requests (> 90%). OOM risk.{{ end }}",
-      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nMemory usage recovered to {{ printf \"%.1f\" .Value }}%.{{ end }}"
     },
     "for": "5m"
   },
@@ -399,12 +368,28 @@
     "expression": "predict_linear(cnpg_pg_database_size_bytes[1h], 24 * 3600) / (1024 * 1024 * 1024)",
     "threshold": 100,
     "exec_err_state": "KeepLast",
-    "no_data_state": "Ok",
+    "no_data_state": "OK",
     "condition": "gt",
     "annotations": {
       "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n*Database:* {{ .Labels.datname }}\n\nINFO: Database predicted to grow by {{ printf \"%.1f\" .Value }} GB in next 24h. Review data retention.{{ end }}",
       "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n*Database:* {{ .Labels.datname }}\n\nDatabase growth rate normalized.{{ end }}"
     },
     "for": "30m"
+  },
+  {
+    "name": "CNPG Pod High Memory Usage",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/CloudNativePG_Alerting_Runbook.md#cnpg-021-high-memory-utilization",
+    "expression": "100 * (sum by (pod, namespace) (container_memory_working_set_bytes{container!=\"\", pod=~\"postgres-cluster-.*\"}) / sum by (pod, namespace) (kube_pod_container_resource_requests{resource=\"memory\", pod=~\"postgres-cluster-.*\"}))",
+    "threshold": 90,
+    "exec_err_state": "KeepLast",
+    "no_data_state": "OK",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nWARNING: Memory usage at {{ printf \"%.1f\" .Value }}% of requests (> 90%). OOM risk.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.namespace }}\n*Pod:* {{ .Labels.pod }}\n\nMemory usage recovered to {{ printf \"%.1f\" .Value }}%.{{ end }}"
+    },
+    "for": "5m"
   }
 ]
