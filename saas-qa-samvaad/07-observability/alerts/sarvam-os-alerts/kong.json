@@ -30,21 +30,6 @@
     "for": "2m"
   },
   {
-    "name": "Kong High Request Latency P95 Critical",
-    "is_paused": false,
-    "severity": "critical",
-    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kong_Alerting_Runbook.md#kong-003-high-request-latency-p95-critical",
-    "expression": "histogram_quantile(0.95, sum by (route, le) (rate(kong_request_latency_ms_bucket{route!~\"monitoring.grafana-ingress.kube-prometheus-stack-grafana.grafana.agrimin.sarvam.ai.80\"}[5m])))",
-    "threshold": 1000,
-    "exec_err_state": "KeepLast",
-    "condition": "gt",
-    "annotations": {
-      "FiringAlertValues": "{{ with $values.A }}*Component:* Kong\n\nCRITICAL: P95 request latency at {{ printf \"%.0f\" .Value }}ms (> 1000ms). User experience severely impacted.{{ end }}",
-      "ResolvedAlertValues": "{{ with $values.A }}*Component:* Kong\n\nP95 request latency recovered to {{ printf \"%.0f\" .Value }}ms.{{ end }}"
-    },
-    "for": "5m"
-  },
-  {
     "name": "Kong High Upstream Latency P95 Critical",
     "is_paused": false,
     "severity": "critical",
@@ -116,21 +101,6 @@
     "annotations": {
       "FiringAlertValues": "{{ with $values.A }}*Component:* Kong\n\nWARNING: High 4xx error rate at {{ printf \"%.2f\" .Value }}% (> 10%). Check auth config, rate limits, and route configuration.{{ end }}",
       "ResolvedAlertValues": "{{ with $values.A }}*Component:* Kong\n\n4xx error rate recovered to {{ printf \"%.2f\" .Value }}%.{{ end }}"
-    },
-    "for": "5m"
-  },
-  {
-    "name": "Kong High Request Latency P95 Warning",
-    "is_paused": false,
-    "severity": "warning",
-    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kong_Alerting_Runbook.md#kong-009-high-request-latency-p95-warning",
-    "expression": "histogram_quantile(0.95, sum by (route, le) (rate(kong_request_latency_ms_bucket{route!~\"monitoring.grafana-ingress.kube-prometheus-stack-grafana.grafana.agrimin.sarvam.ai.80\"}[5m])))",
-    "threshold": 500,
-    "exec_err_state": "OK",
-    "condition": "gt",
-    "annotations": {
-      "FiringAlertValues": "{{ with $values.A }}*Component:* Kong\n\nWARNING: P95 request latency elevated at {{ printf \"%.0f\" .Value }}ms (> 500ms). Monitor trend.{{ end }}",
-      "ResolvedAlertValues": "{{ with $values.A }}*Component:* Kong\n\nP95 request latency recovered to {{ printf \"%.0f\" .Value }}ms.{{ end }}"
     },
     "for": "5m"
   },
@@ -225,21 +195,6 @@
     "for": "5m"
   },
   {
-    "name": "Kong High Request Latency P99",
-    "is_paused": false,
-    "severity": "info",
-    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kong_Alerting_Runbook.md#kong-016-high-request-latency-p99",
-    "expression": "histogram_quantile(0.99, sum by (route, le) (rate(kong_request_latency_ms_bucket{route!~\"monitoring.grafana-ingress.kube-prometheus-stack-grafana.grafana.agrimin.sarvam.ai.80\"}[5m])))",
-    "threshold": 2000,
-    "exec_err_state": "OK",
-    "condition": "gt",
-    "annotations": {
-      "FiringAlertValues": "{{ with $values.A }}*Component:* Kong\n\nINFO: P99 request latency at {{ printf \"%.0f\" .Value }}ms (> 2000ms). Tail latency is high.{{ end }}",
-      "ResolvedAlertValues": "{{ with $values.A }}*Component:* Kong\n\nP99 request latency recovered to {{ printf \"%.0f\" .Value }}ms.{{ end }}"
-    },
-    "for": "10m"
-  },
-  {
     "name": "Kong High Request Rate",
     "is_paused": false,
     "severity": "info",
@@ -253,5 +208,50 @@
       "ResolvedAlertValues": "{{ with $values.A }}*Component:* Kong\n\nRequest rate recovered to {{ printf \"%.0f\" .Value }} req/s.{{ end }}"
     },
     "for": "5m"
+  },
+  {
+    "name": "Kong High Request Latency P95 Critical",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kong_Alerting_Runbook.md#kong-003-high-request-latency-p95-critical",
+    "expression": "histogram_quantile(0.95, sum by (route, le) (rate(kong_request_latency_ms_bucket{route!~\"monitoring.grafana-ingress.kube-prometheus-stack-grafana.grafana.agrimin.sarvam.ai.80\"}[5m])))",
+    "threshold": 1000,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Component:* Kong\n*Route:* {{ .Labels.route }}\n\nCRITICAL: P95 request latency at {{ printf \"%.0f\" .Value }}ms (> 1000ms). User experience severely impacted.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Component:* Kong\n*Route:* {{ .Labels.route }}\n\nP95 request latency recovered to {{ printf \"%.0f\" .Value }}ms.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Kong High Request Latency P95 Warning",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kong_Alerting_Runbook.md#kong-009-high-request-latency-p95-warning",
+    "expression": "histogram_quantile(0.95, sum by (route, le) (rate(kong_request_latency_ms_bucket{route!~\"monitoring.grafana-ingress.kube-prometheus-stack-grafana.grafana.agrimin.sarvam.ai.80\"}[5m])))",
+    "threshold": 500,
+    "exec_err_state": "OK",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Component:* Kong\n*Route:* {{ .Labels.route }}\n\nWARNING: P95 request latency elevated at {{ printf \"%.0f\" .Value }}ms (> 500ms). Monitor trend.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Component:* Kong\n*Route:* {{ .Labels.route }}\n\nP95 request latency recovered to {{ printf \"%.0f\" .Value }}ms.{{ end }}"
+    },
+    "for": "5m"
+  },
+  {
+    "name": "Kong High Request Latency P99",
+    "is_paused": false,
+    "severity": "info",
+    "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kong_Alerting_Runbook.md#kong-016-high-request-latency-p99",
+    "expression": "histogram_quantile(0.99, sum by (route, le) (rate(kong_request_latency_ms_bucket{route!~\"monitoring.grafana-ingress.kube-prometheus-stack-grafana.grafana.agrimin.sarvam.ai.80\"}[5m])))",
+    "threshold": 2000,
+    "exec_err_state": "OK",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Component:* Kong\n*Route:* {{ .Labels.route }}\n\nINFO: P99 request latency at {{ printf \"%.0f\" .Value }}ms (> 2000ms). Tail latency is high.{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Component:* Kong\n*Route:* {{ .Labels.route }}\n\nP99 request latency recovered to {{ printf \"%.0f\" .Value }}ms.{{ end }}"
+    },
+    "for": "10m"
   }
 ]
