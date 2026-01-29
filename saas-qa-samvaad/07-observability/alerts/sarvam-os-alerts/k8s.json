@@ -469,7 +469,7 @@
     "is_paused": false,
     "severity": "warning",
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kubernetes_Alerting_Runbook.md#k8s-010-pod-memory-approaching-limit",
-    "expression": "100 * (\n  sum by (pod, namespace) (rate(container_cpu_usage_seconds_total{container!=\"\", pod!~\"(collector|gmp-operator|node-local-dns-chkrz|anetd)-.*\"}[5m])) \n  / \n  sum by (pod, namespace) (kube_pod_container_resource_requests{resource=\"cpu\", pod!~\"(collector|gmp-operator|node-local-dns-chkrz|anetd)-.*\"})\n)",
+    "expression": "100 * (\n  sum by (pod, namespace) (rate(container_cpu_usage_seconds_total{container!=\"\", pod!~\"(collector|gmp-operator|node-local-dns|anetd).*\"}[5m])) \n  / \n  sum by (pod, namespace) (kube_pod_container_resource_requests{resource=\"cpu\", pod!~\"(collector|gmp-operator|node-local-dns|anetd).*\"})\n)",
     "threshold": 80,
     "exec_err_state": "OK",
     "no_data_state": "OK",
@@ -485,7 +485,7 @@
     "is_paused": false,
     "severity": "warning",
     "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/CloudNativePG_Alerting_Runbook.md#cnpg-021-high-memory-utilization",
-    "expression": "100 * (\n  sum by (pod, namespace) (container_memory_working_set_bytes{container!=\"\", pod!~\"(anetd|gmp-operator|collector|node-local-dns-chkrz|anetd)-.*\"}) \n  / \n  sum by (pod, namespace) (kube_pod_container_resource_requests{resource=\"memory\", pod!~\"(anetd|gmp-operator|collector|node-local-dns-chkrz|anetd)-.*\"})\n) > 90",
+    "expression": "100 * (\n  sum by (pod, namespace) (container_memory_working_set_bytes{container!=\"\", pod!~\"(anetd|gmp-operator|collector|node-local-dns-chkrz).*\"}) \n  / \n  sum by (pod, namespace) (kube_pod_container_resource_requests{resource=\"memory\", pod!~\"(anetd|gmp-operator|collector|node-local-dns-chkrz|anetd).*\"})\n) > 90",
     "threshold": 90,
     "exec_err_state": "OK",
     "no_data_state": "OK",
@@ -555,5 +555,228 @@
       "ResolvedAlertValues": "*Component:* Infrastructure\n\nPod Memory usage has returned to normal levels."
     },
     "for": "10m"
+  },
+  {
+    "name": "High ClickHouse Connection Count",
+    "is_paused": false,
+    "expression": "chi_clickhouse_metric_TCPConnection + chi_clickhouse_metric_HTTPConnection + chi_clickhouse_metric_InterserverConnection",
+    "threshold": 20,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}\n  [Pod: {{ .Labels.pod }}] [CHI: {{ .Labels.chi }}] [env: production] High number of ClickHouse connections detected. (Actual: {{ .Value }} > Threshold: 10).\n{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}\n  [Pod: {{ .Labels.pod }}] [CHI: {{ .Labels.chi }}] [env: production] ClickHouse connection count back to normal. (Actual: {{ .Value }} < Threshold: 10).\n{{ end }}"
+    },
+    "for": "30s"
+  },
+  {
+    "name": "ClickHouse RWLock Writers Waiting",
+    "is_paused": false,
+    "expression": "chi_clickhouse_metric_RWLockWaitingWriters",
+    "threshold": 0,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}\n  [Pod: {{ .Labels.pod }}] [CHI: {{ .Labels.chi }}] [env: production] ClickHouse writers are waiting on RWLock. Contention detected. ({{ .Value }} writers waiting > 0).\n{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}\n  [Pod: {{ .Labels.pod }}] [CHI: {{ .Labels.chi }}] [env: production] ClickHouse RWLock contention resolved. ({{ .Value }} writers waiting).\n{{ end }}"
+    },
+    "for": "1m"
+  },
+  {
+    "name": "ClickHouse High Disk Usage",
+    "is_paused": false,
+    "expression": "100 * (1 - (chi_clickhouse_metric_DiskFreeBytes / chi_clickhouse_metric_DiskTotalBytes))",
+    "threshold": 85,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}\n  [Disk: {{ .Labels.disk }}] [Pod: {{ .Labels.pod }}] [CHI: {{ .Labels.chi }}] [env: production] ClickHouse disk usage is high: {{ .Value }}% used (Threshold: 85%).\n{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}\n  [Disk: {{ .Labels.disk }}] [Pod: {{ .Labels.pod }}] [CHI: {{ .Labels.chi }}] [env: production] ClickHouse disk usage back to normal: {{ .Value }}% used.\n{{ end }}"
+    },
+    "for": "1m"
+  },
+  {
+    "name": "ClickHouse High Memory Usage",
+    "is_paused": false,
+    "expression": "100 * (1 - (chi_clickhouse_metric_OSMemoryFreePlusCached / chi_clickhouse_metric_OSMemoryTotal))",
+    "threshold": 85,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}\n  [Pod: {{ .Labels.pod }}] [CHI: {{ .Labels.chi }}] [env: production] High node memory usage: {{ .Value }}% used (Threshold: 85%).\n{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}\n  [Pod: {{ .Labels.pod }}] [CHI: {{ .Labels.chi }}] [env: production] Node memory usage normalized: {{ .Value }}%.\n{{ end }}"
+    },
+    "for": "1m"
+  },
+  {
+    "name": "ClickHouse CPU Overload",
+    "is_paused": true,
+    "expression": "chi_clickhouse_metric_OSCPUOverload",
+    "threshold": 0,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}\n  [Pod: {{ .Labels.pod }}] [CHI: {{ .Labels.chi }}] [env: production] ClickHouse CPU overload detected. Overloaded cores: {{ .Value }} > 0.\n{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}\n  [Pod: {{ .Labels.pod }}] [CHI: {{ .Labels.chi }}] [env: production] CPU overload resolved. Overloaded cores: {{ .Value }}.\n{{ end }}"
+    },
+    "for": "1m"
+  },
+  {
+    "name": "ClickHouse High Query Preemptions",
+    "is_paused": false,
+    "expression": "rate(chi_clickhouse_metric_QueryPreempted[1m])",
+    "threshold": 10,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}\n  [Pod: {{ .Labels.pod }}] [CHI: {{ .Labels.chi }}] [env: production] High rate of query preemptions: {{ .Value }}/s > 10/s. Indicates query concurrency/thread contention.\n{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}\n  [Pod: {{ .Labels.pod }}] [CHI: {{ .Labels.chi }}] [env: production] Query preemption rate back to normal: {{ .Value }}/s.\n{{ end }}"
+    },
+    "for": "2m"
+  },
+  {
+    "name": "ClickHouse High Query Threads",
+    "is_paused": false,
+    "expression": "chi_clickhouse_metric_QueryThread",
+    "threshold": 100,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}\n  [Pod: {{ .Labels.pod }}] [CHI: {{ .Labels.chi }}] [env: production] Too many concurrent query threads: {{ .Value }} > 100.\n{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}\n Query thread count normalized: [env: production] {{ .Value }}.\n{{ end }}"
+    },
+    "for": "1m"
+  },
+  {
+    "name": "ClickHouse QueryPreempted Priority Wait",
+    "is_paused": false,
+    "expression": "avg_over_time(rate(chi_clickhouse_metric_QueryPreempted[1m])[10m:])",
+    "threshold": 0,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}\n  [Pod: {{ .Labels.pod }}] [CHI: {{ .Labels.chi }}] [env: production] Queries are being preempted due to 'priority' settings. ({{ .Value }} preemptions/sec average over 10 minutes > 0).\n{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}\n  [Pod: {{ .Labels.pod }}] [env: production] Query preemptions due to 'priority' settings resolved. ({{ .Value }} average/sec).\n{{ end }}"
+    },
+    "for": "1m"
+  },
+  {
+    "name": "ClickHouse Merge Overload",
+    "is_paused": false,
+    "expression": "avg_over_time(chi_clickhouse_metric_Merge[1h])",
+    "threshold": 15,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}\n  [Pod: {{ .Labels.pod }}] [CHI: {{ .Labels.chi }}] [env: production] Background merges are saturating the merge pool. (Avg: {{ .Value }} > Threshold: 15 over 1h).\n{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}\n  [Pod: {{ .Labels.pod }}] Merge activity normalized. [env: production] (Avg: {{ .Value }}).\n{{ end }}"
+    },
+    "for": "2m"
+  },
+  {
+    "name": "ClickHouse DistributedFiles Pending Warning",
+    "is_paused": false,
+    "expression": "chi_clickhouse_metric_DistributedFilesToInsert",
+    "threshold": 50,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}\n  [CHI: {{ .Labels.chi }}] [env: production] Warning: {{ .Value }} distributed insert files pending > 50.\n{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}\n Distributed insert queue normalized: [env: production] {{ .Value }} pending.\n{{ end }}"
+    },
+    "for": "2m"
+  },
+  {
+    "name": "ClickHouse Query Load High Warning",
+    "is_paused": false,
+    "expression": "chi_clickhouse_metric_Query",
+    "threshold": 70,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}\n  [CHI: {{ .Labels.chi }}] [Pod: {{ .Labels.pod }}] [env: production] High query concurrency warning: {{ .Value }} executing queries > 70 (70% of max).\n{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}\n  Query concurrency warning resolved. [env: production] Now: {{ .Value }}.\n{{ end }}"
+    },
+    "for": "2m"
+  },
+  {
+    "name": "ClickHouseDelayedInserts",
+    "is_paused": false,
+    "expression": "rate(chi_clickhouse_metric_DelayedInserts[1m])",
+    "threshold": 0,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}\n  [Pod: {{ .Labels.pod }}] [CHI: {{ .Labels.chi }}] [env: production] INSERTs are being delayed or rejected due to high number of active parts in MergeTree. Current rate: {{ .Value }}/s.\n{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}\n  INSERT delays resolved.[env: production] Delay rate back to normal: {{ .Value }}/s.\n{{ end }}"
+    },
+    "for": "2m"
+  },
+  {
+    "name": "ClickHouse Replication DelayHigh",
+    "is_paused": false,
+    "expression": "chi_clickhouse_metric_ReplicasMaxAbsoluteDelay",
+    "threshold": 300,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}\n  [CHI: {{ .Labels.chi }}] [Pod: {{ .Labels.pod }}] [env: production] Replication lag is high: {{ .Value }} seconds > 300. Replica is falling behind.\n{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}\n  Replication delay normalized: [env: production] {{ .Value }} seconds.\n{{ end }}"
+    },
+    "for": "2m"
+  },
+  {
+    "name": "High CPU Usage per Pod in ClickHouse (vs Requests)",
+    "is_paused": false,
+    "expression": "100 * (sum by(pod, namespace) (rate(container_cpu_usage_seconds_total{container!=\"\", namespace=\"clickhouse\"}[1m])) / sum by(pod, namespace) (kube_pod_container_resource_requests{resource=\"cpu\", unit=\"core\", namespace=\"clickhouse\"}))",
+    "threshold": 75,
+    "exec_err_state": "Ok",
+    "no_data_state": "Ok",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}\n[Team: platform] [env: production]  \nCPU usage: `{{ printf \"%.2f\" .Value }}`% (> 75%) on pod `{{ .Labels.pod }}`.\n{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}\n[Team: platform] [env: production]  \nCPU usage recovered: `{{ printf \"%.2f\" .Value }}`% (≤ 75%) on pod `{{ .Labels.pod }}`.\n{{ end }}"
+    },
+    "for": "2m"
+  },
+  {
+    "name": "High Memory Usage per Pod in ClickHouse (vs Requests)",
+    "is_paused": false,
+    "expression": "100 * (sum by(pod, namespace) (container_memory_usage_bytes{container!=\"\", namespace=\"clickhouse\"}) / sum by(pod, namespace) (kube_pod_container_resource_requests{resource=\"memory\", unit=\"byte\", namespace=\"clickhouse\"}))",
+    "threshold": 75,
+    "exec_err_state": "Ok",
+    "no_data_state": "Ok",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}\n[Team: platform] [env: production]  \nMemory usage: `{{ printf \"%.2f\" .Value }}`% (> 75%) on pod `{{ .Labels.pod }}`.\n{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}\n[Team: platform] [env: production]  \nMemory usage recovered: `{{ printf \"%.2f\" .Value }}`% (≤ 75%) on pod `{{ .Labels.pod }}`.\n{{ end }}"
+    },
+    "for": "2m"
+  },
+  {
+    "name": "ClickHouse PVC Disk Usage (All PVCs)",
+    "is_paused": false,
+    "expression": "100 * (kubelet_volume_stats_used_bytes{namespace=\"clickhouse\"} / kubelet_volume_stats_capacity_bytes{namespace=\"clickhouse\"})",
+    "threshold": 70,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}\n  [PVC: {{ .Labels.persistentvolumeclaim }}] [Pod: {{ .Labels.pod }}] [Team: infra] [env: production] High disk usage on PVC `{{ .Labels.persistentvolumeclaim }}` (Usage: {{ .Value }}% > Threshold: 85%).\n{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}\n  [PVC: {{ .Labels.persistentvolumeclaim }}] [Pod: {{ .Labels.pod }}] [Team: infra] [env: production] PVC disk usage is back to normal for `{{ .Labels.persistentvolumeclaim }}` (Usage: {{ .Value }}% < Threshold: 85%).\n{{ end }}"
+    },
+    "for": "2m"
+  },
+  {
+    "name": "ClickHouse Disk Data Size High",
+    "is_paused": false,
+    "expression": "chi_clickhouse_metric_DiskDataBytes{chi=~\".*\", hostname=~\".*\"} / (1024 * 1024 * 1024)",
+    "threshold": 350,
+    "exec_err_state": "KeepLast",
+    "condition": "gt",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}\n  [Hostname: {{ .Labels.hostname }}] [CHI: {{ .Labels.chi }}] [Team: infra] [env: production] ClickHouse disk usage high ({{ .Value }} GB > 400 GB).\n{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}\n  [Hostname: {{ .Labels.hostname }}] [CHI: {{ .Labels.chi }}] [Team: infra] [env: production] ClickHouse disk usage back to normal ({{ .Value }} GB < 400 GB).\n{{ end }}"
+    },
+    "for": "5m"
   }
 ]

@@ -433,3 +433,43 @@ resource "kubernetes_manifest" "strimzi_kafka_by_port_podmonitor" {
 #     }
 #   }
 # }
+
+
+resource "kubernetes_manifest" "altinity_operator_monitor" {
+  manifest = {
+    "apiVersion" = "monitoring.coreos.com/v1"
+    "kind"       = "ServiceMonitor"
+    "metadata" = {
+      "name"      = "altinity-operator-monitor"
+      "namespace" = "monitoring"
+      "labels" = {
+        "release" = "prometheus"
+      }
+    }
+    "spec" = {
+      "namespaceSelector" = {
+        "matchNames" = [
+          "clickhouse-samvaad",
+        ]
+      }
+      "selector" = {
+        "matchLabels" = {
+          "app.kubernetes.io/instance" = "altinity-clickhouse-operator"
+          "app.kubernetes.io/name"     = "altinity-clickhouse-operator"
+        }
+      }
+      "endpoints" = [
+        {
+          "port"     = "clickhouse-metrics"
+          "path"     = "/metrics"
+          "interval" = "30s"
+        },
+        {
+          "port"     = "operator-metrics"
+          "path"     = "/metrics"
+          "interval" = "30s"
+        },
+      ]
+    }
+  }
+}
