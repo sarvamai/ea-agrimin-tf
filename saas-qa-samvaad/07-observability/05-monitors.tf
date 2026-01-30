@@ -473,3 +473,38 @@ resource "kubernetes_manifest" "altinity_operator_monitor" {
     }
   }
 }
+
+
+resource "kubernetes_manifest" "x509_certficate_monitor" {
+  manifest = {
+    "apiVersion" = "monitoring.coreos.com/v1"
+    "kind"       = "ServiceMonitor"
+    "metadata" = {
+      "name"      = "x509-certificate-monitor"
+      "namespace" = "monitoring"
+      "labels" = {
+        "release" = "prometheus"
+      }
+    }
+    "spec" = {
+      "namespaceSelector" = {
+        "matchNames" = [
+          "monitoring",
+        ]
+      }
+      "selector" = {
+        "matchLabels" = {
+          "app.kubernetes.io/instance" = "x509-certificate-exporter"
+          "app.kubernetes.io/name"     = "x509-certificate-exporter"
+        }
+      }
+      "endpoints" = [
+        {
+          "port"     = "metrics"
+          "path"     = "/metrics"
+          "interval" = "30s"
+        }
+      ]
+    }
+  }
+}

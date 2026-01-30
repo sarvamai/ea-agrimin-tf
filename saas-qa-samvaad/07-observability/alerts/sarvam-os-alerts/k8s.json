@@ -454,22 +454,22 @@
     "is_paused": false,
     "severity": "warning",
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kubernetes_Alerting_Runbook.md#k8s-010-pod-memory-approaching-limit",
-    "expression": "sum by (namespace, pod, container) (kube_pod_container_status_last_terminated_reason{reason=\"OOMKilled\"}) > 0",
+    "expression": "sum by (namespace, pod, container) (kube_pod_container_status_last_terminated_reason{reason=\"OOMKilled\"}) > 0 and sum by (namespace, pod, container) (changes(kube_pod_container_status_restarts_total[10m])) > 0",
     "threshold": 0,
     "exec_err_state": "OK",
     "condition": "gt",
     "annotations": {
-      "FiringAlertValues": "*Component:* Kubernetes\\n*Namespace:* {{ with $values.A }}{{ .Labels.namespace }}{{ end }}\\n*Pod:* {{ with $values.A }}{{ .Labels.pod }}{{ end }}\\n*Container:* {{ with $values.A }}{{ .Labels.container }}{{ end }}\\n\\nWARNING: Container was OOMKilled. Increase memory limits or fix memory leak.",
-      "ResolvedAlertValues": "*Component:* Kubernetes\\n\\nNo recent OOMKill events."
+      "FiringAlertValues": "*Component:* Kubernetes\n*Namespace:* {{ with $values.A }}{{ .Labels.namespace }}{{ end }}\n*Pod:* {{ with $values.A }}{{ .Labels.pod }}{{ end }}\n*Container:* {{ with $values.A }}{{ .Labels.container }}{{ end }}\n\nWARNING: Container was OOMKilled recently. This alert triggered because a restart was detected in the last 10 minutes with an OOM reason.",
+      "ResolvedAlertValues": "*Component:* Kubernetes\n\nNo recent OOMKill events detected in the last window."
     },
-    "for": "0m"
+    "for": "5m"
   },
   {
     "name": "Pods High CPU Usage",
     "is_paused": false,
     "severity": "warning",
     "doc": "https://github.com/sarvamai/grafana-dashboards/blob/main/sarvam-os/signoz/Kubernetes_Alerting_Runbook.md#k8s-010-pod-memory-approaching-limit",
-    "expression": "100 * (\n  sum by (pod, namespace) (rate(container_cpu_usage_seconds_total{container!=\"\", pod!~\"(collector|gmp-operator|node-local-dns|anetd).*\"}[5m])) \n  / \n  sum by (pod, namespace) (kube_pod_container_resource_requests{resource=\"cpu\", pod!~\"(collector|gmp-operator|node-local-dns|anetd).*\"})\n)",
+    "expression": "100 * (\n  sum by (pod, namespace) (rate(container_cpu_usage_seconds_total{container!=\"\", pod!~\"(collector|gmp-operator|node-local-dns|anetd|netd).*\"}[5m])) \n  / \n  sum by (pod, namespace) (kube_pod_container_resource_requests{resource=\"cpu\", pod!~\"(collector|gmp-operator|node-local-dns|anetd|netd).*\"})\n)",
     "threshold": 80,
     "exec_err_state": "OK",
     "no_data_state": "OK",
@@ -485,7 +485,7 @@
     "is_paused": false,
     "severity": "warning",
     "doc": "https://github.com/sarvamai/grafana-dashboards/tree/main/sarvam-os/signoz/CloudNativePG_Alerting_Runbook.md#cnpg-021-high-memory-utilization",
-    "expression": "100 * (\n  sum by (pod, namespace) (container_memory_working_set_bytes{container!=\"\", pod!~\"(anetd|gmp-operator|collector|node-local-dns-chkrz).*\"}) \n  / \n  sum by (pod, namespace) (kube_pod_container_resource_requests{resource=\"memory\", pod!~\"(anetd|gmp-operator|collector|node-local-dns-chkrz|anetd).*\"})\n) > 90",
+    "expression": "100 * (\n  sum by (pod, namespace) (container_memory_working_set_bytes{container!=\"\", pod!~\"(anetd|gmp-operator|collector|node-local-dns-chkrz|netd).*\"}) \n  / \n  sum by (pod, namespace) (kube_pod_container_resource_requests{resource=\"memory\", pod!~\"(anetd|gmp-operator|collector|node-local-dns-chkrz|anetd|netd).*\"})\n) > 90",
     "threshold": 90,
     "exec_err_state": "OK",
     "no_data_state": "OK",
