@@ -1,0 +1,34 @@
+[
+  {
+    "name": "SSL Certificate Expiry Warning (14 Days)",
+    "is_paused": false,
+    "severity": "warning",
+    "doc": "https://cert-manager.io/docs/troubleshooting/acme/",
+    "expression": "min by (secret_name, secret_namespace, subject_CN) ((x509_cert_not_after{secret_name!=\"\"} - time()) / 86400) < 14",
+    "threshold": 14,
+    "condition": "lt",
+    "exec_err_state": "OK",
+    "no_data_state": "OK",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.secret_namespace }}\n*Secret:* {{ .Labels.secret_name }}\n*Domain:* {{ .Labels.subject_CN }}\n\nWARNING: Certificate expires in {{ printf \"%.1f\" .Value }} days.\n\n*Troubleshooting:*\n1. Check Cert-Manager status:\n`kubectl describe certificate {{ .Labels.secret_name }} -n {{ .Labels.secret_namespace }}`\n2. Check for Order/Challenge issues:\n`kubectl get challenges -A`{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.secret_namespace }}\n*Secret:* {{ .Labels.secret_name }}\n\nRESOLVED: Certificate renewed. Expires in {{ printf \"%.1f\" .Value }} days.{{ end }}"
+    },
+    "for": "15m"
+  },
+  {
+    "name": "SSL Certificate CRITICAL Expiry (3 Days)",
+    "is_paused": false,
+    "severity": "critical",
+    "doc": "https://cert-manager.io/docs/troubleshooting/",
+    "expression": "min by (secret_name, secret_namespace, subject_CN) ((x509_cert_not_after{secret_name!=\"\"} - time()) / 86400) < 3",
+    "threshold": 3,
+    "condition": "lt",
+    "exec_err_state": "OK",
+    "no_data_state": "OK",
+    "annotations": {
+      "FiringAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.secret_namespace }}\n*Secret:* {{ .Labels.secret_name }}\n*Domain:* {{ .Labels.subject_CN }}\n\nCRITICAL: Certificate expires in {{ printf \"%.1f\" .Value }} days. Immediate intervention required.\n\n*Action:*\nManually trigger renewal:\n`cmctl renew {{ .Labels.secret_name }} -n {{ .Labels.secret_namespace }}`{{ end }}",
+      "ResolvedAlertValues": "{{ with $values.A }}*Namespace:* {{ .Labels.secret_namespace }}\n*Secret:* {{ .Labels.secret_name }}\n\nRESOLVED: Certificate renewed. Expires in {{ printf \"%.1f\" .Value }} days.{{ end }}"
+    },
+    "for": "15m"
+  }
+]
